@@ -1,1 +1,417 @@
 
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Tesorería MGP</title>
+
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+
+    <div class="app">
+
+        <!-- ENCABEZADO -->
+        <header class="header">
+
+            <div>
+                <h1>Tesorería MGP</h1>
+                <p>Registro de ingresos y egresos</p>
+            </div>
+
+            <div class="estado">
+                <span class="estado-punto"></span>
+                Sistema activo
+            </div>
+
+        </header>
+
+
+        <!-- RESUMEN -->
+        <section class="resumen">
+
+            <div class="tarjeta ingreso">
+
+                <div class="tarjeta-titulo">
+                    Total ingresos
+                </div>
+
+                <div id="totalIngresos" class="tarjeta-monto">
+                    S/ 0.00
+                </div>
+
+            </div>
+
+
+            <div class="tarjeta egreso">
+
+                <div class="tarjeta-titulo">
+                    Total egresos
+                </div>
+
+                <div id="totalEgresos" class="tarjeta-monto">
+                    S/ 0.00
+                </div>
+
+            </div>
+
+
+            <div class="tarjeta saldo">
+
+                <div class="tarjeta-titulo">
+                    Saldo
+                </div>
+
+                <div id="saldo" class="tarjeta-monto">
+                    S/ 0.00
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ACCIONES -->
+        <section class="acciones">
+
+            <button
+                type="button"
+                id="btnIngreso"
+                class="btn btn-ingreso">
+
+                + Registrar ingreso
+
+            </button>
+
+
+            <button
+                type="button"
+                id="btnEgreso"
+                class="btn btn-egreso">
+
+                − Registrar egreso
+
+            </button>
+
+        </section>
+
+
+        <!-- FORMULARIO -->
+        <section
+            id="formulario"
+            class="panel formulario-panel oculto">
+
+            <div class="panel-header">
+
+                <div>
+
+                    <h2 id="tituloFormulario">
+                        Registrar movimiento
+                    </h2>
+
+                    <p>
+                        Complete los datos del movimiento.
+                    </p>
+
+                </div>
+
+                <button
+                    type="button"
+                    id="btnCerrarFormulario"
+                    class="btn-cerrar">
+
+                    ×
+
+                </button>
+
+            </div>
+
+
+            <form id="movimientoForm">
+
+                <input
+                    type="hidden"
+                    id="tipo"
+                    name="tipo"
+                    value="">
+
+
+                <div class="form-grid">
+
+                    <div class="campo">
+
+                        <label for="fecha">
+                            Fecha
+                        </label>
+
+                        <input
+                            type="date"
+                            id="fecha"
+                            name="fecha"
+                            required>
+
+                    </div>
+
+
+                    <div class="campo">
+
+                        <label for="boleta">
+                            N.º de boleta
+                        </label>
+
+                        <input
+                            type="text"
+                            id="boleta"
+                            name="boleta"
+                            placeholder="Ej. B001-0001"
+                            required>
+
+                    </div>
+
+
+                    <div class="campo">
+
+                        <label for="cantidad">
+                            Cantidad
+                        </label>
+
+                        <input
+                            type="number"
+                            id="cantidad"
+                            name="cantidad"
+                            min="0.01"
+                            step="0.01"
+                            placeholder="0"
+                            required>
+
+                    </div>
+
+
+                    <div class="campo campo-descripcion">
+
+                        <label for="descripcion">
+                            Descripción
+                        </label>
+
+                        <input
+                            type="text"
+                            id="descripcion"
+                            name="descripcion"
+                            placeholder="Descripción del movimiento"
+                            required>
+
+                    </div>
+
+
+                    <div class="campo">
+
+                        <label for="importeUnitario">
+                            Importe unitario
+                        </label>
+
+                        <input
+                            type="number"
+                            id="importeUnitario"
+                            name="importeUnitario"
+                            min="0"
+                            step="0.01"
+                            placeholder="0.00"
+                            required>
+
+                    </div>
+
+
+                    <div class="campo">
+
+                        <label for="importeTotal">
+                            Importe total
+                        </label>
+
+                        <input
+                            type="text"
+                            id="importeTotal"
+                            value="S/ 0.00"
+                            readonly>
+
+                    </div>
+
+                </div>
+
+
+                <div class="form-acciones">
+
+                    <button
+                        type="button"
+                        id="btnCancelar"
+                        class="btn btn-secundario">
+
+                        Cancelar
+
+                    </button>
+
+
+                    <button
+                        type="submit"
+                        id="btnGuardar"
+                        class="btn btn-principal">
+
+                        Guardar movimiento
+
+                    </button>
+
+                </div>
+
+            </form>
+
+        </section>
+
+
+        <!-- MOVIMIENTOS -->
+        <section class="panel">
+
+            <div class="panel-header">
+
+                <div>
+
+                    <h2>Movimientos recientes</h2>
+
+                    <p>
+                        Registro de ingresos y egresos
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="tabla-contenedor">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+
+                            <th>Fecha</th>
+                            <th>Tipo</th>
+                            <th>Boleta</th>
+                            <th>Descripción</th>
+                            <th>Cantidad</th>
+                            <th>Unitario</th>
+                            <th>Total</th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody id="tablaMovimientos">
+
+                        <tr>
+
+                            <td
+                                colspan="7"
+                                class="tabla-vacia">
+
+                                No hay movimientos registrados.
+
+                            </td>
+
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+
+        <!-- REPORTES -->
+        <section class="panel">
+
+            <div class="panel-header">
+
+                <div>
+
+                    <h2>Reporte por rango de fechas</h2>
+
+                    <p>
+                        Consulte y descargue los movimientos de un período.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="reporte-form">
+
+                <div class="campo">
+
+                    <label for="fechaDesde">
+                        Desde
+                    </label>
+
+                    <input
+                        type="date"
+                        id="fechaDesde">
+
+                </div>
+
+
+                <div class="campo">
+
+                    <label for="fechaHasta">
+                        Hasta
+                    </label>
+
+                    <input
+                        type="date"
+                        id="fechaHasta">
+
+                </div>
+
+
+                <button
+                    type="button"
+                    id="btnGenerarReporte"
+                    class="btn btn-principal">
+
+                    Generar reporte
+
+                </button>
+
+
+                <button
+                    type="button"
+                    id="btnDescargarReporte"
+                    class="btn btn-secundario">
+
+                    Descargar reporte
+
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- PIE -->
+        <footer>
+
+            Tesorería MGP — Versión 1.0
+
+        </footer>
+
+    </div>
+
+
+    <script src="js/app.js"></script>
+
+</body>
+</html>
