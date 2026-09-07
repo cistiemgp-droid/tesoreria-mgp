@@ -1,1 +1,457 @@
 
+* {
+    box-sizing: border-box;
+}
+
+:root {
+    --azul: #0f2f55;
+    --azul-claro: #2563eb;
+    --celeste: #e8f1f8;
+    --fondo: #f3f6fa;
+    --blanco: #ffffff;
+    --texto: #172033;
+    --texto-secundario: #64748b;
+    --borde: #dbe3ec;
+    --verde: #16803c;
+    --verde-fondo: #eaf7ef;
+    --rojo: #c62828;
+    --rojo-fondo: #fceeee;
+    --sombra: 0 4px 18px rgba(15, 47, 85, 0.08);
+    --radio: 12px;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    margin: 0;
+    background: var(--fondo);
+    color: var(--texto);
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+button,
+input {
+    font-family: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+.app {
+    width: min(1200px, calc(100% - 32px));
+    margin: 0 auto;
+    padding: 24px 0 40px;
+}
+
+
+/* =========================================
+   ENCABEZADO
+========================================= */
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    background: var(--azul);
+    color: var(--blanco);
+    padding: 24px 28px;
+    border-radius: var(--radio);
+    margin-bottom: 20px;
+    box-shadow: var(--sombra);
+}
+
+.header h1 {
+    margin: 0 0 6px;
+    font-size: 28px;
+}
+
+.header p {
+    margin: 0;
+    opacity: 0.85;
+    font-size: 14px;
+}
+
+.estado {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.estado-punto {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #55d98b;
+}
+
+
+/* =========================================
+   RESUMEN
+========================================= */
+
+.resumen {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.tarjeta {
+    background: var(--blanco);
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+    padding: 20px;
+    box-shadow: var(--sombra);
+}
+
+.tarjeta-titulo {
+    color: var(--texto-secundario);
+    font-size: 14px;
+    margin-bottom: 10px;
+}
+
+.tarjeta-monto {
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.tarjeta.ingreso {
+    border-left: 5px solid var(--verde);
+}
+
+.tarjeta.egreso {
+    border-left: 5px solid var(--rojo);
+}
+
+.tarjeta.saldo {
+    border-left: 5px solid var(--azul-claro);
+}
+
+.tarjeta.ingreso .tarjeta-monto {
+    color: var(--verde);
+}
+
+.tarjeta.egreso .tarjeta-monto {
+    color: var(--rojo);
+}
+
+.tarjeta.saldo .tarjeta-monto {
+    color: var(--azul-claro);
+}
+
+
+/* =========================================
+   BOTONES PRINCIPALES
+========================================= */
+
+.acciones {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.btn {
+    border: 0;
+    border-radius: 9px;
+    padding: 12px 18px;
+    font-size: 14px;
+    font-weight: bold;
+    transition: 0.2s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.btn-ingreso {
+    background: var(--verde);
+    color: var(--blanco);
+}
+
+.btn-egreso {
+    background: var(--rojo);
+    color: var(--blanco);
+}
+
+.btn-principal {
+    background: var(--azul-claro);
+    color: var(--blanco);
+}
+
+.btn-secundario {
+    background: #eef2f7;
+    color: var(--texto);
+    border: 1px solid var(--borde);
+}
+
+
+/* =========================================
+   PANELES
+========================================= */
+
+.panel {
+    background: var(--blanco);
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+    box-shadow: var(--sombra);
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+.panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    padding: 20px 22px;
+    border-bottom: 1px solid var(--borde);
+}
+
+.panel-header h2 {
+    margin: 0 0 5px;
+    font-size: 18px;
+}
+
+.panel-header p {
+    margin: 0;
+    color: var(--texto-secundario);
+    font-size: 13px;
+}
+
+
+/* =========================================
+   FORMULARIO
+========================================= */
+
+.formulario-panel {
+    overflow: visible;
+}
+
+.oculto {
+    display: none;
+}
+
+.formulario-panel form {
+    padding: 22px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+
+.campo {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.campo-descripcion {
+    grid-column: span 2;
+}
+
+.campo label {
+    font-size: 13px;
+    font-weight: bold;
+    color: var(--texto);
+}
+
+.campo input {
+    width: 100%;
+    height: 42px;
+    padding: 0 12px;
+    border: 1px solid var(--borde);
+    border-radius: 8px;
+    background: var(--blanco);
+    color: var(--texto);
+    outline: none;
+    font-size: 14px;
+}
+
+.campo input:focus {
+    border-color: var(--azul-claro);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.10);
+}
+
+.campo input[readonly] {
+    background: #f5f7fa;
+    font-weight: bold;
+}
+
+.form-acciones {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 22px;
+}
+
+.btn-cerrar {
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: 7px;
+    background: #f1f4f8;
+    color: var(--texto-secundario);
+    font-size: 22px;
+    line-height: 1;
+}
+
+.btn-cerrar:hover {
+    background: #e5eaf0;
+}
+
+
+/* =========================================
+   TABLA
+========================================= */
+
+.tabla-contenedor {
+    width: 100%;
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 760px;
+}
+
+thead {
+    background: #f5f8fb;
+}
+
+th,
+td {
+    padding: 13px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--borde);
+    font-size: 13px;
+}
+
+th {
+    color: var(--texto-secundario);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+tbody tr:hover {
+    background: #f9fbfd;
+}
+
+.tabla-vacia {
+    text-align: center;
+    color: var(--texto-secundario);
+    padding: 30px;
+}
+
+.tipo-ingreso {
+    color: var(--verde);
+    font-weight: bold;
+}
+
+.tipo-egreso {
+    color: var(--rojo);
+    font-weight: bold;
+}
+
+
+/* =========================================
+   REPORTES
+========================================= */
+
+.reporte-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto auto;
+    align-items: end;
+    gap: 14px;
+    padding: 22px;
+}
+
+
+/* =========================================
+   PIE
+========================================= */
+
+footer {
+    text-align: center;
+    color: var(--texto-secundario);
+    font-size: 12px;
+    padding: 10px;
+}
+
+
+/* =========================================
+   RESPONSIVE
+========================================= */
+
+@media (max-width: 850px) {
+
+    .resumen {
+        grid-template-columns: 1fr;
+    }
+
+    .reporte-form {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .reporte-form .btn {
+        width: 100%;
+    }
+
+}
+
+
+@media (max-width: 600px) {
+
+    .app {
+        width: min(100% - 20px, 1200px);
+        padding-top: 10px;
+    }
+
+    .header {
+        padding: 20px;
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .header h1 {
+        font-size: 24px;
+    }
+
+    .acciones {
+        flex-direction: column;
+    }
+
+    .acciones .btn {
+        width: 100%;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .campo-descripcion {
+        grid-column: span 1;
+    }
+
+    .form-acciones {
+        flex-direction: column-reverse;
+    }
+
+    .form-acciones .btn {
+        width: 100%;
+    }
+
+    .reporte-form {
+        grid-template-columns: 1fr;
+    }
+
+}
