@@ -456,10 +456,19 @@
 
                 <button
                     type="button"
-                    id="btnDescargarReporte"
-                    class="btn btn-secundario">
+                    id="btnDescargarExcel"
+                    class="btn btn-excel">
 
-                    Descargar reporte
+                    Descargar Excel
+
+                </button>
+
+                <button
+                    type="button"
+                    id="btnDescargarPDF"
+                    class="btn btn-pdf">
+
+                    Descargar PDF
 
                 </button>
 
@@ -480,7 +489,12 @@
     </div>
 
 
-    <script src="js/app.js?v=20260908-03"></script>
+    <!-- Librerías para reportes -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js"></script>
+
+    <script src="js/app.js?v=20260908-04"></script>
 
 </body>
 </html>
