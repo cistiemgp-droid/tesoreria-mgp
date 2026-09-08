@@ -8,18 +8,51 @@
 // ==================================================
 
 const CONFIG = {
-    API_URL: 'https://script.google.com/macros/s/AKfycbxiODFMTjypL7GmoLZjMfpxUk_UmnMt2WgLmbkNyEE9eI2Tnnnxp4BOhVQZrRfLJkWH/exec'
+    API_URL: 'https://script.google.com/macros/s/AKfycbxiODFMTjypL7GmoLZjMfpxUk_UmnMt2WgLmbkNyEE9eI2Tnnnxp4BOhVQZrRfLJkWH/exec',
+    STORAGE_TOKEN: 'TESORERIA_MGP_TOKEN'
 };
+
 
 // ==================================================
 // ELEMENTOS DEL DOM
 // ==================================================
 
-const btnIngreso = document.getElementById('btnIngreso');
-const btnEgreso = document.getElementById('btnEgreso');
+const pantallaLogin =
+    document.getElementById('pantallaLogin');
 
-const formulario = document.getElementById('formulario');
-const movimientoForm = document.getElementById('movimientoForm');
+const aplicacion =
+    document.getElementById('aplicacion');
+
+const loginForm =
+    document.getElementById('loginForm');
+
+const loginUsuario =
+    document.getElementById('loginUsuario');
+
+const loginPassword =
+    document.getElementById('loginPassword');
+
+const btnLogin =
+    document.getElementById('btnLogin');
+
+const loginMensaje =
+    document.getElementById('loginMensaje');
+
+const btnCerrarSesion =
+    document.getElementById('btnCerrarSesion');
+
+
+const btnIngreso =
+    document.getElementById('btnIngreso');
+
+const btnEgreso =
+    document.getElementById('btnEgreso');
+
+const formulario =
+    document.getElementById('formulario');
+
+const movimientoForm =
+    document.getElementById('movimientoForm');
 
 const btnCerrarFormulario =
     document.getElementById('btnCerrarFormulario');
@@ -85,14 +118,277 @@ const btnDescargarReporte =
 
 document.addEventListener('DOMContentLoaded', function () {
 
-    establecerFechaActual();
+    configurarEventosLogin();
 
     configurarEventos();
 
+    establecerFechaActual();
+
     calcularImporteTotal();
 
-    cargarDatos();
+    comprobarSesion();
+
 });
+
+
+// ==================================================
+// LOGIN
+// ==================================================
+
+function configurarEventosLogin() {
+
+    loginForm.addEventListener(
+        'submit',
+        iniciarSesion
+    );
+
+    btnCerrarSesion.addEventListener(
+        'click',
+        cerrarSesion
+    );
+
+}
+
+
+function mostrarLoginMensaje(mensaje, error = false) {
+
+    loginMensaje.textContent = mensaje;
+    loginMensaje.style.display = 'block';
+
+    if (error) {
+        loginMensaje.style.color = '#b91c1c';
+    } else {
+        loginMensaje.style.color = '#166534';
+    }
+
+}
+
+
+async function iniciarSesion(evento) {
+
+    evento.preventDefault();
+
+    const usuario = loginUsuario.value.trim();
+    const password = loginPassword.value;
+
+    if (!usuario) {
+        mostrarLoginMensaje(
+            'Ingrese el usuario.',
+            true
+        );
+        loginUsuario.focus();
+        return;
+    }
+
+    if (!password) {
+        mostrarLoginMensaje(
+            'Ingrese la contraseña.',
+            true
+        );
+        loginPassword.focus();
+        return;
+    }
+
+    if (!CONFIG.API_URL) {
+        mostrarLoginMensaje(
+            'La API no está configurada.',
+            true
+        );
+        return;
+    }
+
+    try {
+
+        btnLogin.disabled = true;
+        btnLogin.textContent = 'Verificando...';
+
+        mostrarLoginMensaje(
+            'Conectando con el servidor...'
+        );
+
+        const respuesta = await enviarAPI(
+            'login',
+            {
+                usuario: usuario,
+                password: password
+            },
+            false
+        );
+
+        if (!respuesta || !respuesta.ok) {
+
+            throw new Error(
+                respuesta &&
+                (respuesta.error || respuesta.mensaje)
+                    ? (respuesta.error || respuesta.mensaje)
+                    : 'Usuario o contraseña incorrectos.'
+            );
+
+        }
+
+        if (!respuesta.token) {
+            throw new Error(
+                'El servidor no devolvió el token de sesión.'
+            );
+        }
+
+        localStorage.setItem(
+            CONFIG.STORAGE_TOKEN,
+            respuesta.token
+        );
+
+        mostrarAplicacion();
+
+        loginForm.reset();
+
+        await cargarDatos();
+
+    } catch (error) {
+
+        console.error(
+            'Error de inicio de sesión:',
+            error
+        );
+
+        mostrarLoginMensaje(
+            error.message ||
+            'No se pudo iniciar sesión.',
+            true
+        );
+
+    } finally {
+
+        btnLogin.disabled = false;
+        btnLogin.textContent = 'Iniciar sesión';
+
+    }
+
+}
+
+
+async function comprobarSesion() {
+
+    const token = localStorage.getItem(
+        CONFIG.STORAGE_TOKEN
+    );
+
+    if (!token) {
+
+        mostrarLogin();
+
+        return;
+    }
+
+    try {
+
+        mostrarAplicacion();
+
+        const respuesta = await enviarAPI(
+            'obtenerDatos'
+        );
+
+        if (!respuesta || !respuesta.ok) {
+            throw new Error(
+                respuesta &&
+                (respuesta.error || respuesta.mensaje)
+                    ? (respuesta.error || respuesta.mensaje)
+                    : 'Sesión inválida.'
+            );
+        }
+
+        actualizarResumen(
+            respuesta.resumen
+        );
+
+        mostrarMovimientos(
+            respuesta.movimientos
+        );
+
+    } catch (error) {
+
+        console.warn(
+            'Sesión no válida:',
+            error
+        );
+
+        localStorage.removeItem(
+            CONFIG.STORAGE_TOKEN
+        );
+
+        mostrarLogin();
+
+    }
+
+}
+
+
+function mostrarAplicacion() {
+
+    pantallaLogin.hidden = true;
+    aplicacion.hidden = false;
+
+}
+
+
+function mostrarLogin() {
+
+    aplicacion.hidden = true;
+    pantallaLogin.hidden = false;
+
+    loginMensaje.style.display = 'none';
+
+    setTimeout(function () {
+        loginUsuario.focus();
+    }, 0);
+
+}
+
+
+async function cerrarSesion() {
+
+    const token = localStorage.getItem(
+        CONFIG.STORAGE_TOKEN
+    );
+
+    try {
+
+        if (token) {
+
+            await enviarAPI(
+                'logout',
+                {
+                    token: token
+                }
+            );
+
+        }
+
+    } catch (error) {
+
+        console.warn(
+            'No se pudo notificar el cierre de sesión:',
+            error
+        );
+
+    } finally {
+
+        localStorage.removeItem(
+            CONFIG.STORAGE_TOKEN
+        );
+
+        movimientoForm.reset();
+
+        tipoInput.value = '';
+
+        importeTotalInput.value = 'S/ 0.00';
+
+        formulario.classList.add('oculto');
+
+        mostrarLogin();
+
+    }
+
+}
 
 
 // ==================================================
@@ -102,54 +398,42 @@ document.addEventListener('DOMContentLoaded', function () {
 function configurarEventos() {
 
     btnIngreso.addEventListener('click', function () {
-
         abrirFormulario('INGRESO');
-
     });
-
 
     btnEgreso.addEventListener('click', function () {
-
         abrirFormulario('EGRESO');
-
     });
-
 
     btnCerrarFormulario.addEventListener(
         'click',
         cerrarFormulario
     );
 
-
     btnCancelar.addEventListener(
         'click',
         cerrarFormulario
     );
-
 
     movimientoForm.addEventListener(
         'submit',
         guardarMovimiento
     );
 
-
     cantidadInput.addEventListener(
         'input',
         calcularImporteTotal
     );
-
 
     importeUnitarioInput.addEventListener(
         'input',
         calcularImporteTotal
     );
 
-
     btnGenerarReporte.addEventListener(
         'click',
         generarReporte
     );
-
 
     btnDescargarReporte.addEventListener(
         'click',
@@ -291,6 +575,19 @@ async function guardarMovimiento(evento) {
 
     evento.preventDefault();
 
+    const token =
+        localStorage.getItem(
+            CONFIG.STORAGE_TOKEN
+        );
+
+    if (!token) {
+
+        mostrarLogin();
+
+        return;
+
+    }
+
     const datos = {
 
         fecha:
@@ -372,14 +669,6 @@ async function guardarMovimiento(evento) {
     }
 
 
-    // ------------------------------------------------
-    // POR AHORA
-    // ------------------------------------------------
-    //
-    // La conexión con Apps Script se realizará
-    // en el siguiente paso.
-    //
-
     if (!CONFIG.API_URL) {
 
         alert(
@@ -409,6 +698,7 @@ async function guardarMovimiento(evento) {
         if (!respuesta.ok) {
 
             throw new Error(
+                respuesta.error ||
                 respuesta.mensaje ||
                 'No se pudo registrar el movimiento.'
             );
@@ -452,10 +742,34 @@ async function guardarMovimiento(evento) {
 // COMUNICACIÓN CON API
 // ==================================================
 
-async function enviarAPI(accion, datos = {}) {
+async function enviarAPI(
+    accion,
+    datos = {},
+    incluirToken = true
+) {
 
     const url =
         `${CONFIG.API_URL}?accion=${encodeURIComponent(accion)}`;
+
+    const datosEnvio = {
+        ...datos
+    };
+
+    if (
+        incluirToken &&
+        !datosEnvio.token
+    ) {
+
+        const token =
+            localStorage.getItem(
+                CONFIG.STORAGE_TOKEN
+            );
+
+        if (token) {
+            datosEnvio.token = token;
+        }
+
+    }
 
 
     const opciones = {
@@ -466,7 +780,7 @@ async function enviarAPI(accion, datos = {}) {
             'Content-Type': 'text/plain;charset=utf-8'
         },
 
-        body: JSON.stringify(datos)
+        body: JSON.stringify(datosEnvio)
 
     };
 
@@ -495,7 +809,12 @@ async function enviarAPI(accion, datos = {}) {
 
 async function cargarDatos() {
 
-    if (!CONFIG.API_URL) {
+    const token =
+        localStorage.getItem(
+            CONFIG.STORAGE_TOKEN
+        );
+
+    if (!CONFIG.API_URL || !token) {
 
         return;
 
@@ -513,6 +832,7 @@ async function cargarDatos() {
         if (!respuesta.ok) {
 
             throw new Error(
+                respuesta.error ||
                 respuesta.mensaje ||
                 'No se pudieron cargar los datos.'
             );
@@ -537,6 +857,26 @@ async function cargarDatos() {
             error
         );
 
+        if (
+            error.message &&
+            (
+                error.message
+                    .toLowerCase()
+                    .includes('sesión') ||
+                error.message
+                    .toLowerCase()
+                    .includes('token')
+            )
+        ) {
+
+            localStorage.removeItem(
+                CONFIG.STORAGE_TOKEN
+            );
+
+            mostrarLogin();
+
+        }
+
     }
 
 }
@@ -549,7 +889,9 @@ async function cargarDatos() {
 function actualizarResumen(datos) {
 
     if (!datos) {
+
         return;
+
     }
 
 
@@ -627,9 +969,11 @@ function mostrarMovimientos(movimientos) {
             </td>
 
             <td>
+
                 <span class="${claseTipo}">
                     ${escaparHTML(movimiento.tipo)}
                 </span>
+
             </td>
 
             <td>
@@ -651,11 +995,13 @@ function mostrarMovimientos(movimientos) {
             </td>
 
             <td>
+
                 <strong>
                     ${formatearMoneda(
                         movimiento.importeTotal
                     )}
                 </strong>
+
             </td>
 
         `;
@@ -713,9 +1059,6 @@ function generarReporte() {
 
     }
 
-
-    // La generación real del reporte
-    // la conectaremos en el siguiente paso.
 
     console.log(
         'Generar reporte:',
@@ -784,10 +1127,15 @@ function descargarReporte() {
 function escaparHTML(valor) {
 
     return String(valor ?? '')
+
         .replace(/&/g, '&amp;')
+
         .replace(/</g, '&lt;')
+
         .replace(/>/g, '&gt;')
+
         .replace(/"/g, '&quot;')
+
         .replace(/'/g, '&#039;');
 
 }
