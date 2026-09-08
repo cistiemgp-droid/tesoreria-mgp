@@ -656,3 +656,31 @@ footer{
     width:100%;
   }
 }
+
+
+/* TESORERIA MGP V1.1 OPERATIVO */
+[hidden]{display:none !important;}
+#pantallaLogin[hidden],#aplicacion[hidden]{display:none !important;}
+.header{display:flex;align-items:center;justify-content:space-between;gap:18px;}
+.header .estado{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px;}
+.estado-punto{width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block;}
+.panel{background:#fff;border:1px solid var(--borde);border-radius:12px;padding:18px;box-shadow:var(--sombra);}
+.panel-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;}
+.panel-header h2{margin:0 0 4px;font-size:20px;}
+.panel-header p{margin:0;color:var(--gris);font-size:13px;}
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;}
+.form-grid .campo-descripcion{grid-column:1/-1;}
+.form-acciones{display:flex;justify-content:flex-end;gap:10px;margin-top:16px;}
+.btn-cerrar{width:36px;height:36px;padding:0;border-radius:50%;background:#f1f5f9;color:var(--texto);font-size:22px;line-height:1;}
+.celda-acciones{white-space:nowrap;}
+.btn-tabla{padding:6px 9px;margin-right:4px;font-size:12px;border-radius:7px;}
+.btn-editar{background:#e0f2fe;color:#075985;}
+.btn-editar:hover{background:#bae6fd;}
+.movimiento-anulado td{opacity:.72;}
+.resultado-reporte{margin-top:18px;}
+.reporte-resumen{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px;}
+.reporte-resumen>div{background:#f8fafc;border:1px solid var(--borde);border-radius:9px;padding:12px;}
+.reporte-resumen span{display:block;color:var(--gris);font-size:12px;margin-bottom:5px;}
+.reporte-resumen strong{font-size:16px;}
+.reporte-tabla{box-shadow:none;}
+@media(max-width:800px){.header{align-items:flex-start;flex-direction:column;}.header .estado{justify-content:flex-start;}.form-grid{grid-template-columns:1fr;}.form-grid .campo-descripcion{grid-column:auto;}.form-acciones{justify-content:stretch;}.form-acciones .btn{flex:1;}.reporte-resumen{grid-template-columns:repeat(2,1fr);}}
