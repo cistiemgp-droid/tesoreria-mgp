@@ -677,10 +677,41 @@ footer{
 .btn-editar{background:#e0f2fe;color:#075985;}
 .btn-editar:hover{background:#bae6fd;}
 .movimiento-anulado td{opacity:.72;}
-.resultado-reporte{margin-top:18px;}
-.reporte-resumen{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px;}
-.reporte-resumen>div{background:#f8fafc;border:1px solid var(--borde);border-radius:9px;padding:12px;}
-.reporte-resumen span{display:block;color:var(--gris);font-size:12px;margin-bottom:5px;}
-.reporte-resumen strong{font-size:16px;}
-.reporte-tabla{box-shadow:none;}
-@media(max-width:800px){.header{align-items:flex-start;flex-direction:column;}.header .estado{justify-content:flex-start;}.form-grid{grid-template-columns:1fr;}.form-grid .campo-descripcion{grid-column:auto;}.form-acciones{justify-content:stretch;}.form-acciones .btn{flex:1;}.reporte-resumen{grid-template-columns:repeat(2,1fr);}}
+.resultado-reporte{margin-top:20px;}
+.reporte-cabecera{display:flex;justify-content:space-between;gap:20px;align-items:flex-end;background:#fff;border:1px solid var(--borde);border-radius:12px;padding:18px;margin-bottom:16px;}
+.reporte-etiqueta{font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--gris);}
+.reporte-cabecera h2{margin:4px 0 2px;font-size:22px;color:var(--azul);}
+.reporte-cabecera p{margin:0;color:var(--gris);}
+.reporte-periodo{text-align:right;}
+.reporte-periodo span{display:block;font-size:12px;color:var(--gris);margin-bottom:4px;}
+.reporte-periodo strong{font-size:14px;color:var(--texto);}
+.reporte-seccion{background:#fff;border:1px solid var(--borde);border-radius:12px;padding:14px;margin-bottom:16px;overflow:hidden;}
+.reporte-seccion-titulo{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:10px;padding:0 2px;}
+.reporte-seccion-titulo h3{margin:0;font-size:15px;letter-spacing:.5px;}
+.reporte-seccion-titulo strong{font-size:16px;}
+.reporte-ingresos{border-top:4px solid #16a34a;}
+.reporte-ingresos .reporte-seccion-titulo h3,.reporte-ingresos .reporte-seccion-titulo strong{color:#15803d;}
+.reporte-egresos{border-top:4px solid #dc2626;}
+.reporte-egresos .reporte-seccion-titulo h3,.reporte-egresos .reporte-seccion-titulo strong{color:#b91c1c;}
+.reporte-tabla{box-shadow:none;margin:0;}
+.reporte-tabla table{min-width:760px;}
+.reporte-resumen-final{background:#fff;border:1px solid var(--borde);border-radius:12px;padding:16px;margin-top:4px;}
+.reporte-resumen-titulo{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px;}
+.reporte-resumen-titulo h3{margin:0;color:var(--azul);font-size:15px;}
+.reporte-resumen-titulo span{font-size:12px;color:var(--gris);}
+.reporte-resumen-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;}
+.resumen-reporte-card{border:1px solid var(--borde);border-radius:10px;padding:12px;background:#f8fafc;}
+.resumen-reporte-card span{display:block;color:var(--gris);font-size:12px;margin-bottom:6px;}
+.resumen-reporte-card strong{display:block;font-size:16px;}
+.resumen-reporte-card.ingreso strong{color:#15803d;}
+.resumen-reporte-card.egreso strong{color:#b91c1c;}
+.resumen-reporte-card.saldo strong{color:var(--azul2);}
+.resumen-reporte-card.anulados strong{color:#b45309;}
+.reporte-nota{font-size:12px;color:var(--gris);margin:12px 2px 0;}
+.btn-excel{background:#166534;color:#fff;}
+.btn-excel:hover{background:#14532d;}
+.btn-pdf{background:#b91c1c;color:#fff;}
+.btn-pdf:hover{background:#991b1b;}
+.estado-activo{font-size:12px;font-weight:600;}
+@media(max-width:900px){.reporte-resumen-cards{grid-template-columns:repeat(2,1fr);}.reporte-cabecera{align-items:flex-start;flex-direction:column;}.reporte-periodo{text-align:left;}}
+@media(max-width:800px){.header{align-items:flex-start;flex-direction:column;}.header .estado{justify-content:flex-start;}.form-grid{grid-template-columns:1fr;}.form-grid .campo-descripcion{grid-column:auto;}.form-acciones{justify-content:stretch;}.form-acciones .btn{flex:1;}.reporte-resumen-cards{grid-template-columns:1fr 1fr;}.reporte-form .btn{width:100%;}}
