@@ -1,6 +1,10 @@
 /* ==================================================
-   CONTROL DE VISTAS LOGIN / APLICACIÓN
+   TESORERÍA MGP V1
+   APARIENCIA MEJORADA - BASE FUNCIONAL CONGELADA
+   No modifica lógica, API ni comportamiento JavaScript.
    ================================================== */
+
+/* CONTROL DE VISTAS: NO QUITAR */
 [hidden]{
   display:none !important;
 }
@@ -12,34 +16,50 @@
 
 :root{
   --azul:#0f2f55;
+  --azul-oscuro:#0a2340;
   --azul2:#2563eb;
   --celeste:#dbeafe;
+  --celeste-suave:#f0f6ff;
   --fondo:#eef3f8;
   --blanco:#ffffff;
   --texto:#172033;
   --gris:#64748b;
+  --gris-claro:#94a3b8;
   --borde:#d7dee8;
+  --borde-suave:#e8edf3;
   --verde:#15803d;
+  --verde-fondo:#dcfce7;
   --rojo:#b91c1c;
+  --rojo-fondo:#fee2e2;
   --amarillo:#b45309;
+  --amarillo-fondo:#fff7ed;
   --sombra:0 8px 24px rgba(15,47,85,.10);
+  --sombra-suave:0 4px 14px rgba(15,47,85,.07);
 }
 
-*{box-sizing:border-box}
+*{
+  box-sizing:border-box;
+}
 
-html,body{
+html,
+body{
   margin:0;
   padding:0;
   min-height:100%;
 }
 
 body{
-  background:var(--fondo);
+  background:
+    linear-gradient(180deg,#f5f8fc 0%,var(--fondo) 100%);
   color:var(--texto);
   font-family:Arial,Helvetica,sans-serif;
+  line-height:1.45;
 }
 
-button,input,select,textarea{
+button,
+input,
+select,
+textarea{
   font:inherit;
 }
 
@@ -51,27 +71,38 @@ button{
   display:none !important;
 }
 
+/* ==================================================
+   LOGIN
+   ================================================== */
+
 #pantallaLogin{
+  min-height:100vh;
   background:
-    radial-gradient(circle at top left, rgba(37,99,235,.14), transparent 38%),
+    radial-gradient(circle at top left,rgba(37,99,235,.14),transparent 38%),
     linear-gradient(135deg,#eef5ff,#f8fafc);
 }
 
 #pantallaLogin > div{
   border:1px solid rgba(15,47,85,.08);
+  box-shadow:var(--sombra);
 }
 
 #pantallaLogin h1{
   color:var(--azul);
 }
 
+/* ==================================================
+   CAMPOS GENERALES
+   ================================================== */
+
 .campo{
   display:flex;
   flex-direction:column;
-  gap:6px;
+  gap:7px;
 }
 
 .campo label{
+  font-size:14px;
   font-weight:700;
   color:var(--texto);
 }
@@ -80,13 +111,24 @@ button{
 .campo select,
 .campo textarea{
   width:100%;
-  min-height:42px;
-  padding:10px 12px;
+  min-height:44px;
+  padding:10px 13px;
   border:1px solid var(--borde);
-  border-radius:8px;
+  border-radius:9px;
   outline:none;
-  background:#fff;
+  background:var(--blanco);
   color:var(--texto);
+  transition:border-color .18s ease,box-shadow .18s ease;
+}
+
+.campo textarea{
+  min-height:90px;
+  resize:vertical;
+}
+
+.campo input::placeholder,
+.campo textarea::placeholder{
+  color:var(--gris-claro);
 }
 
 .campo input:focus,
@@ -96,62 +138,111 @@ button{
   box-shadow:0 0 0 3px rgba(37,99,235,.12);
 }
 
+/* ==================================================
+   BOTONES
+   ================================================== */
+
 .btn,
 button{
   border:0;
-  border-radius:8px;
+  border-radius:9px;
   padding:10px 16px;
   font-weight:700;
+  transition:transform .12s ease,box-shadow .18s ease,background .18s ease;
+}
+
+.btn:hover,
+button:hover{
+  transform:translateY(-1px);
+}
+
+.btn:active,
+button:active{
+  transform:translateY(0);
 }
 
 .btn-principal,
 #btnLogin{
   background:var(--azul);
   color:#fff;
+  box-shadow:0 3px 8px rgba(15,47,85,.16);
 }
 
 .btn-principal:hover,
 #btnLogin:hover{
-  background:#0b2543;
+  background:var(--azul-oscuro);
 }
 
 .btn-secundario{
-  background:#e2e8f0;
+  background:#e8eef6;
   color:var(--texto);
 }
 
 .btn-secundario:hover{
-  background:#cbd5e1;
+  background:#dbe4ef;
 }
 
 .btn-ingreso{
-  background:#dcfce7;
+  background:var(--verde-fondo);
   color:#166534;
 }
 
+.btn-ingreso:hover{
+  background:#bbf7d0;
+}
+
 .btn-egreso{
-  background:#fee2e2;
+  background:var(--rojo-fondo);
   color:#991b1b;
 }
 
+.btn-egreso:hover{
+  background:#fecaca;
+}
+
 .btn-anular{
-  background:#fff7ed;
+  background:var(--amarillo-fondo);
   color:#9a3412;
 }
+
+.btn-cerrar{
+  width:38px;
+  height:38px;
+  padding:0;
+  border-radius:9px;
+  background:#f1f5f9;
+  color:var(--gris);
+  font-size:24px;
+  line-height:1;
+}
+
+.btn-cerrar:hover{
+  background:#e2e8f0;
+}
+
+/* ==================================================
+   APLICACIÓN
+   ================================================== */
 
 #aplicacion{
   width:min(1200px,100%);
   margin:0 auto;
-  padding:20px;
+  padding:24px 20px 30px;
 }
 
-header{
-  background:var(--azul);
+/* ENCABEZADO */
+
+header.header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:20px;
+  background:linear-gradient(135deg,var(--azul),#173e6a);
   color:#fff;
-  border-radius:12px;
-  padding:18px 20px;
-  box-shadow:var(--sombra);
-  margin-bottom:18px;
+  border-radius:15px;
+  padding:20px 22px;
+  box-shadow:0 10px 28px rgba(15,47,85,.18);
+  margin-bottom:20px;
 }
 
 header h1,
@@ -160,82 +251,229 @@ header p{
   margin:0;
 }
 
+header h1{
+  font-size:30px;
+  line-height:1.15;
+  letter-spacing:-.4px;
+}
+
+header p{
+  margin-top:5px;
+  color:#dbeafe;
+  font-size:14px;
+}
+
+.estado{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+  white-space:nowrap;
+  font-size:14px;
+  font-weight:700;
+}
+
+.estado-punto{
+  width:9px;
+  height:9px;
+  display:inline-block;
+  border-radius:50%;
+  background:#4ade80;
+  box-shadow:0 0 0 4px rgba(74,222,128,.14);
+}
+
+.estado .btn-secundario{
+  margin-left:8px !important;
+  background:#edf2f8;
+  color:var(--azul);
+}
+
+/* ==================================================
+   TARJETAS DE RESUMEN
+   ================================================== */
+
 .resumen,
 .tarjetas-resumen,
 .cards-resumen{
   display:grid;
   grid-template-columns:repeat(3,1fr);
-  gap:14px;
-  margin-bottom:18px;
+  gap:16px;
+  margin-bottom:20px;
 }
 
 .tarjeta,
 .card,
 .resumen-card{
-  background:#fff;
+  position:relative;
+  background:var(--blanco);
   border:1px solid var(--borde);
-  border-radius:12px;
-  padding:18px;
-  box-shadow:var(--sombra);
+  border-radius:13px;
+  padding:18px 20px;
+  box-shadow:var(--sombra-suave);
+  overflow:hidden;
 }
 
+.tarjeta::before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:0;
+  bottom:0;
+  width:4px;
+  background:var(--azul2);
+}
+
+.tarjeta.ingreso::before{
+  background:#22c55e;
+}
+
+.tarjeta.egreso::before{
+  background:#ef4444;
+}
+
+.tarjeta.saldo::before{
+  background:var(--azul2);
+}
+
+.tarjeta-titulo,
 .tarjeta h3,
 .card h3,
 .resumen-card h3{
-  margin:0 0 8px;
+  margin:0 0 7px;
   font-size:14px;
+  font-weight:700;
   color:var(--gris);
 }
 
+.tarjeta-monto,
 .tarjeta strong,
 .card strong,
 .resumen-card strong{
-  font-size:24px;
+  font-size:25px;
+  font-weight:800;
+  color:var(--azul);
+  letter-spacing:-.2px;
 }
+
+.tarjeta.ingreso .tarjeta-monto{
+  color:#15803d;
+}
+
+.tarjeta.egreso .tarjeta-monto{
+  color:#b91c1c;
+}
+
+.tarjeta.saldo .tarjeta-monto{
+  color:var(--azul);
+}
+
+/* ==================================================
+   ACCIONES PRINCIPALES
+   ================================================== */
 
 section{
-  margin-bottom:18px;
-}
-
-#formulario,
-.formulario{
-  background:#fff;
-  border:1px solid var(--borde);
-  border-radius:12px;
-  padding:20px;
-  box-shadow:var(--sombra);
-}
-
-#movimientoForm{
-  display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:14px;
-}
-
-#movimientoForm .campo-completo{
-  grid-column:1/-1;
+  margin-bottom:20px;
 }
 
 .acciones{
   display:flex;
   gap:10px;
   flex-wrap:wrap;
-  margin-top:16px;
+  margin-top:2px;
 }
+
+.acciones .btn{
+  min-height:42px;
+  padding:10px 17px;
+}
+
+/* ==================================================
+   PANELES
+   ================================================== */
+
+.panel,
+#formulario,
+.formulario{
+  background:var(--blanco);
+  border:1px solid var(--borde);
+  border-radius:13px;
+  padding:20px;
+  box-shadow:var(--sombra-suave);
+}
+
+.panel-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  margin-bottom:16px;
+}
+
+.panel-header h2{
+  margin:0;
+  color:var(--azul);
+  font-size:20px;
+  line-height:1.25;
+}
+
+.panel-header p{
+  margin:4px 0 0;
+  color:var(--gris);
+  font-size:14px;
+}
+
+/* ==================================================
+   FORMULARIO DE MOVIMIENTO
+   ================================================== */
+
+#movimientoForm{
+  display:block;
+}
+
+.form-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:15px;
+}
+
+#movimientoForm .campo-completo,
+.form-grid .campo-completo{
+  grid-column:1/-1;
+}
+
+#importeTotal{
+  background:#f1f5f9;
+  color:var(--azul);
+  font-weight:800;
+}
+
+.form-acciones{
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:18px;
+  padding-top:16px;
+  border-top:1px solid var(--borde-suave);
+}
+
+/* ==================================================
+   TABLA DE MOVIMIENTOS
+   ================================================== */
 
 .tabla-contenedor,
 .tabla-responsive{
   width:100%;
   overflow:auto;
-  background:#fff;
+  background:var(--blanco);
   border:1px solid var(--borde);
-  border-radius:12px;
-  box-shadow:var(--sombra);
+  border-radius:11px;
 }
 
 table{
   width:100%;
-  border-collapse:collapse;
+  border-collapse:separate;
+  border-spacing:0;
   min-width:760px;
 }
 
@@ -243,80 +481,178 @@ th{
   background:#e8eef7;
   color:var(--azul);
   text-align:left;
-  padding:11px;
+  padding:12px 11px;
   white-space:nowrap;
+  font-size:13px;
+  font-weight:800;
+  border-bottom:1px solid var(--borde);
 }
 
 td{
-  padding:10px 11px;
+  padding:11px;
   border-top:1px solid #edf1f5;
+  font-size:14px;
+  vertical-align:middle;
 }
 
-tr:hover td{
+tbody tr:first-child td{
+  border-top:0;
+}
+
+tbody tr:hover td{
   background:#f8fafc;
 }
 
-.tipo-ingreso{
-  display:inline-block;
-  padding:4px 8px;
+td:last-child{
+  font-weight:800;
+  color:var(--azul);
+}
+
+.tipo-ingreso,
+.tipo-egreso{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:68px;
+  padding:4px 9px;
   border-radius:999px;
-  background:#dcfce7;
-  color:#166534;
   font-size:12px;
-  font-weight:700;
+  font-weight:800;
+}
+
+.tipo-ingreso{
+  background:var(--verde-fondo);
+  color:#166534;
 }
 
 .tipo-egreso{
-  display:inline-block;
-  padding:4px 8px;
-  border-radius:999px;
-  background:#fee2e2;
+  background:var(--rojo-fondo);
   color:#991b1b;
-  font-size:12px;
-  font-weight:700;
 }
 
 .estado-anulado{
   color:var(--rojo);
-  font-weight:700;
+  font-weight:800;
 }
 
 .tabla-vacia{
   text-align:center;
-  padding:28px !important;
+  padding:32px !important;
   color:var(--gris);
 }
+
+/* ==================================================
+   REPORTE
+   ================================================== */
+
+.reporte-form{
+  display:grid;
+  grid-template-columns:1fr 1fr auto auto;
+  align-items:end;
+  gap:14px;
+}
+
+.reporte-form .btn{
+  min-height:44px;
+  white-space:nowrap;
+}
+
+/* ==================================================
+   PIE
+   ================================================== */
 
 footer{
   text-align:center;
   color:var(--gris);
-  padding:18px;
+  padding:20px 10px 4px;
   font-size:13px;
 }
 
 #loginMensaje{
   margin-top:12px;
-  padding:10px;
+  padding:10px 12px;
   border-radius:8px;
   background:#f8fafc;
 }
 
+/* ==================================================
+   RESPONSIVE
+   ================================================== */
+
+@media(max-width:900px){
+  .reporte-form{
+    grid-template-columns:1fr 1fr;
+  }
+}
+
 @media(max-width:800px){
+  #aplicacion{
+    padding:14px 12px 24px;
+  }
+
+  header.header{
+    align-items:flex-start;
+    flex-direction:column;
+    padding:18px;
+  }
+
+  .estado{
+    width:100%;
+    justify-content:flex-start;
+  }
+
   .resumen,
   .tarjetas-resumen,
   .cards-resumen{
     grid-template-columns:1fr;
   }
 
-  #movimientoForm{
+  .form-grid{
     grid-template-columns:1fr;
   }
 
-  #movimientoForm .campo-completo{
+  #movimientoForm .campo-completo,
+  .form-grid .campo-completo{
     grid-column:auto;
   }
 
-  #aplicacion{
-    padding:12px;
+  .reporte-form{
+    grid-template-columns:1fr;
+  }
+
+  .reporte-form .btn{
+    width:100%;
+  }
+
+  .panel,
+  #formulario,
+  .formulario{
+    padding:16px;
+  }
+}
+
+@media(max-width:520px){
+  header h1{
+    font-size:25px;
+  }
+
+  .estado{
+    flex-wrap:wrap;
+  }
+
+  .estado .btn-secundario{
+    margin-left:0 !important;
+  }
+
+  .acciones .btn{
+    width:100%;
+  }
+
+  .form-acciones{
+    flex-direction:column-reverse;
+  }
+
+  .form-acciones .btn{
+    width:100%;
   }
 }
