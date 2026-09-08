@@ -109,8 +109,11 @@ const fechaHasta =
 const btnGenerarReporte =
     document.getElementById('btnGenerarReporte');
 
-const btnDescargarReporte =
-    document.getElementById('btnDescargarReporte');
+const btnDescargarExcel =
+    document.getElementById('btnDescargarExcel');
+
+const btnDescargarPDF =
+    document.getElementById('btnDescargarPDF');
 
 const resultadoReporte =
     document.getElementById('resultadoReporte');
@@ -461,9 +464,14 @@ function configurarEventos() {
         generarReporte
     );
 
-    btnDescargarReporte.addEventListener(
+    btnDescargarExcel.addEventListener(
         'click',
-        descargarReporte
+        descargarReporteExcel
+    );
+
+    btnDescargarPDF.addEventListener(
+        'click',
+        descargarReportePDF
     );
 
     tablaMovimientos.addEventListener('click', function (evento) {
@@ -1156,17 +1164,19 @@ async function anularMovimientoDesdeTabla(id) {
 // REPORTE
 // ==================================================
 
-function generarReporte() {
+function obtenerDatosReporte() {
+
     const desde = fechaDesde.value;
     const hasta = fechaHasta.value;
 
     if (!desde || !hasta) {
         alert('Seleccione la fecha inicial y final.');
-        return;
+        return null;
     }
+
     if (desde > hasta) {
         alert('La fecha inicial no puede ser mayor que la fecha final.');
-        return;
+        return null;
     }
 
     const datos = movimientosActuales.filter(function (movimiento) {
@@ -1174,109 +1184,443 @@ function generarReporte() {
         return fecha >= desde && fecha <= hasta;
     });
 
-    let ingresos = 0;
-    let egresos = 0;
+    const ingresos = datos.filter(function (movimiento) {
+        return String(movimiento.tipo || '').toUpperCase() === 'INGRESO';
+    });
+
+    const egresos = datos.filter(function (movimiento) {
+        return String(movimiento.tipo || '').toUpperCase() === 'EGRESO';
+    });
+
+    let totalIngresos = 0;
+    let totalEgresos = 0;
     let anulados = 0;
 
-    datos.forEach(function (movimiento) {
-        if (String(movimiento.estado || '').toUpperCase() === 'ANULADO') {
+    ingresos.forEach(function (movimiento) {
+        const anulado = String(movimiento.estado || '').toUpperCase() === 'ANULADO';
+        if (anulado) {
             anulados++;
             return;
         }
-        const total = Number(movimiento.importeTotal) || 0;
-        if (movimiento.tipo === 'INGRESO') ingresos += total;
-        if (movimiento.tipo === 'EGRESO') egresos += total;
+        totalIngresos += Number(movimiento.importeTotal) || 0;
     });
 
+    egresos.forEach(function (movimiento) {
+        const anulado = String(movimiento.estado || '').toUpperCase() === 'ANULADO';
+        if (anulado) {
+            anulados++;
+            return;
+        }
+        totalEgresos += Number(movimiento.importeTotal) || 0;
+    });
+
+    return {
+        desde: desde,
+        hasta: hasta,
+        datos: datos,
+        ingresos: ingresos,
+        egresos: egresos,
+        totalIngresos: totalIngresos,
+        totalEgresos: totalEgresos,
+        saldo: totalIngresos - totalEgresos,
+        anulados: anulados
+    };
+}
+
+function formatearFechaReporte(fecha) {
+    const texto = String(fecha || '');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(texto)) return texto;
+    const partes = texto.split('-');
+    return partes[2] + '/' + partes[1] + '/' + partes[0];
+}
+
+function formatearNumeroReporte(valor) {
+    const numero = Number(valor) || 0;
+    return numero.toLocaleString('es-PE', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+function generarFilasReporteHTML(lista) {
+
+    if (!lista.length) {
+        return '<tr><td colspan="7" class="tabla-vacia">No hay movimientos en esta sección.</td></tr>';
+    }
+
+    return lista.map(function (movimiento) {
+
+        const anulado = String(movimiento.estado || '').toUpperCase() === 'ANULADO';
+        const clase = anulado ? 'movimiento-anulado' : '';
+        const estado = anulado
+            ? '<span class="estado-anulado">ANULADO</span>'
+            : '<span class="estado-activo">ACTIVO</span>';
+
+        return `
+            <tr class="${clase}">
+                <td>${escaparHTML(formatearFechaReporte(movimiento.fecha))}</td>
+                <td>${escaparHTML(movimiento.boleta)}</td>
+                <td>${escaparHTML(movimiento.descripcion)}</td>
+                <td>${Number(movimiento.cantidad || 0)}</td>
+                <td>${formatearMoneda(movimiento.importeUnitario)}</td>
+                <td><strong>${formatearMoneda(movimiento.importeTotal)}</strong></td>
+                <td>${estado}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function generarBloqueReporteHTML(titulo, clase, lista, total) {
+
+    return `
+        <section class="reporte-seccion ${clase}">
+            <div class="reporte-seccion-titulo">
+                <h3>${titulo}</h3>
+                <strong>${formatearMoneda(total)}</strong>
+            </div>
+
+            <div class="tabla-contenedor reporte-tabla">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>N° Boleta</th>
+                            <th>Descripción</th>
+                            <th>Cantidad</th>
+                            <th>Importe Unitario</th>
+                            <th>Importe Total</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${generarFilasReporteHTML(lista)}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    `;
+}
+
+function generarReporte() {
+
+    const reporte = obtenerDatosReporte();
+    if (!reporte) return;
+
     resultadoReporte.innerHTML = `
-        <div class="reporte-resumen">
-            <div><span>Movimientos</span><strong>${datos.length}</strong></div>
-            <div><span>Ingresos</span><strong>${formatearMoneda(ingresos)}</strong></div>
-            <div><span>Egresos</span><strong>${formatearMoneda(egresos)}</strong></div>
-            <div><span>Saldo</span><strong>${formatearMoneda(ingresos - egresos)}</strong></div>
-            <div><span>Anulados</span><strong>${anulados}</strong></div>
+        <div class="reporte-cabecera">
+            <div>
+                <span class="reporte-etiqueta">TESORERÍA</span>
+                <h2>Tesorería MGP</h2>
+                <p>Reporte de movimientos</p>
+            </div>
+            <div class="reporte-periodo">
+                <span>Período</span>
+                <strong>${formatearFechaReporte(reporte.desde)} — ${formatearFechaReporte(reporte.hasta)}</strong>
+            </div>
         </div>
-        <div class="tabla-contenedor reporte-tabla">
-            <table>
-                <thead><tr>
-                    <th>Fecha</th><th>Tipo</th><th>Boleta</th><th>Descripción</th>
-                    <th>Cantidad</th><th>Unitario</th><th>Total</th><th>Estado</th>
-                </tr></thead>
-                <tbody>
-                    ${datos.length === 0
-                        ? '<tr><td colspan="8" class="tabla-vacia">No hay movimientos en el período seleccionado.</td></tr>'
-                        : datos.map(function (movimiento) {
-                            const anulado = String(movimiento.estado || '').toUpperCase() === 'ANULADO';
-                            const clase = movimiento.tipo === 'INGRESO' ? 'tipo-ingreso' : 'tipo-egreso';
-                            return `<tr class="${anulado ? 'movimiento-anulado' : ''}">
-                                <td>${escaparHTML(movimiento.fecha)}</td>
-                                <td><span class="${clase}">${escaparHTML(movimiento.tipo)}</span></td>
-                                <td>${escaparHTML(movimiento.boleta)}</td>
-                                <td>${escaparHTML(movimiento.descripcion)}</td>
-                                <td>${Number(movimiento.cantidad || 0)}</td>
-                                <td>${formatearMoneda(movimiento.importeUnitario)}</td>
-                                <td><strong>${formatearMoneda(movimiento.importeTotal)}</strong></td>
-                                <td>${anulado ? '<span class="estado-anulado">ANULADO</span>' : 'ACTIVO'}</td>
-                            </tr>`;
-                        }).join('')}
-                </tbody>
-            </table>
-        </div>
+
+        ${generarBloqueReporteHTML(
+            'INGRESOS',
+            'reporte-ingresos',
+            reporte.ingresos,
+            reporte.totalIngresos
+        )}
+
+        ${generarBloqueReporteHTML(
+            'EGRESOS',
+            'reporte-egresos',
+            reporte.egresos,
+            reporte.totalEgresos
+        )}
+
+        <section class="reporte-resumen-final">
+            <div class="reporte-resumen-titulo">
+                <h3>RESUMEN DEL PERÍODO</h3>
+                <span>${reporte.datos.length} movimiento(s)</span>
+            </div>
+
+            <div class="reporte-resumen-cards">
+                <div class="resumen-reporte-card ingreso">
+                    <span>Total ingresos</span>
+                    <strong>${formatearMoneda(reporte.totalIngresos)}</strong>
+                </div>
+                <div class="resumen-reporte-card egreso">
+                    <span>Total egresos</span>
+                    <strong>${formatearMoneda(reporte.totalEgresos)}</strong>
+                </div>
+                <div class="resumen-reporte-card saldo">
+                    <span>Saldo</span>
+                    <strong>${formatearMoneda(reporte.saldo)}</strong>
+                </div>
+                <div class="resumen-reporte-card cantidad">
+                    <span>Movimientos</span>
+                    <strong>${reporte.datos.length}</strong>
+                </div>
+                <div class="resumen-reporte-card anulados">
+                    <span>Anulados</span>
+                    <strong>${reporte.anulados}</strong>
+                </div>
+            </div>
+        </section>
+
+        <p class="reporte-nota">
+            Los movimientos ANULADOS se muestran como referencia y no se consideran en los totales.
+        </p>
     `;
 
     resultadoReporte.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function escaparCSV(valor) {
-    const texto = String(valor ?? '');
-    return '"' + texto.replace(/"/g, '""') + '"';
+function prepararFilasExcel(lista) {
+
+    return lista.map(function (movimiento) {
+        const anulado = String(movimiento.estado || '').toUpperCase() === 'ANULADO';
+
+        return [
+            formatearFechaReporte(movimiento.fecha),
+            movimiento.boleta || '',
+            movimiento.descripcion || '',
+            Number(movimiento.cantidad) || 0,
+            Number(movimiento.importeUnitario) || 0,
+            Number(movimiento.importeTotal) || 0,
+            anulado ? 'ANULADO' : 'ACTIVO'
+        ];
+    });
 }
 
-function descargarReporte() {
-    const desde = fechaDesde.value;
-    const hasta = fechaHasta.value;
+function descargarReporteExcel() {
 
-    if (!desde || !hasta) {
-        alert('Seleccione la fecha inicial y final.');
-        return;
-    }
-    if (desde > hasta) {
-        alert('La fecha inicial no puede ser mayor que la fecha final.');
+    const reporte = obtenerDatosReporte();
+    if (!reporte) return;
+
+    if (typeof XLSX === 'undefined') {
+        alert('No se pudo cargar el generador de Excel. Verifique su conexión a Internet y vuelva a intentar.');
         return;
     }
 
-    const datos = movimientosActuales.filter(function (movimiento) {
-        const fecha = String(movimiento.fecha || '');
-        return fecha >= desde && fecha <= hasta;
+    const filas = [];
+
+    filas.push(['TESORERÍA MGP']);
+    filas.push(['REPORTE DE MOVIMIENTOS']);
+    filas.push(['Período', formatearFechaReporte(reporte.desde) + ' al ' + formatearFechaReporte(reporte.hasta)]);
+    filas.push([]);
+
+    filas.push(['INGRESOS']);
+    filas.push(['Fecha', 'N° Boleta', 'Descripción', 'Cantidad', 'Importe Unitario', 'Importe Total', 'Estado']);
+    filas.push.apply(filas, prepararFilasExcel(reporte.ingresos));
+    filas.push(['', '', '', '', 'TOTAL INGRESOS', reporte.totalIngresos, '']);
+    filas.push([]);
+
+    filas.push(['EGRESOS']);
+    filas.push(['Fecha', 'N° Boleta', 'Descripción', 'Cantidad', 'Importe Unitario', 'Importe Total', 'Estado']);
+    filas.push.apply(filas, prepararFilasExcel(reporte.egresos));
+    filas.push(['', '', '', '', 'TOTAL EGRESOS', reporte.totalEgresos, '']);
+    filas.push([]);
+
+    filas.push(['RESUMEN DEL PERÍODO']);
+    filas.push(['Total ingresos', reporte.totalIngresos]);
+    filas.push(['Total egresos', reporte.totalEgresos]);
+    filas.push(['Saldo', reporte.saldo]);
+    filas.push(['Movimientos', reporte.datos.length]);
+    filas.push(['Anulados', reporte.anulados]);
+    filas.push([]);
+    filas.push(['Nota', 'Los movimientos ANULADOS se muestran como referencia y no se consideran en los totales.']);
+
+    const hoja = XLSX.utils.aoa_to_sheet(filas);
+
+    hoja['!cols'] = [
+        { wch: 13 },
+        { wch: 16 },
+        { wch: 42 },
+        { wch: 12 },
+        { wch: 20 },
+        { wch: 18 },
+        { wch: 14 }
+    ];
+
+    hoja['!merges'] = [
+        { s: { r: 0, c: 0 }, e: { r: 0, c: 6 } },
+        { s: { r: 1, c: 0 }, e: { r: 1, c: 6 } }
+    ];
+
+    const libro = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(libro, hoja, 'Reporte Tesorería');
+
+    XLSX.writeFile(
+        libro,
+        `tesoreria_mgp_${reporte.desde}_${reporte.hasta}.xlsx`
+    );
+}
+
+function descargarReportePDF() {
+
+    const reporte = obtenerDatosReporte();
+    if (!reporte) return;
+
+    if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
+        alert('No se pudo cargar el generador de PDF. Verifique su conexión a Internet y vuelva a intentar.');
+        return;
+    }
+
+    const jsPDF = window.jspdf.jsPDF;
+    const documento = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4'
     });
 
-    const filas = [[
-        'Fecha','Tipo','N° Boleta','Descripción','Cantidad',
-        'Importe Unitario','Importe Total','Estado'
-    ]];
+    const margen = 12;
 
-    datos.forEach(function (movimiento) {
-        filas.push([
-            movimiento.fecha || '', movimiento.tipo || '', movimiento.boleta || '',
-            movimiento.descripcion || '', movimiento.cantidad ?? '',
-            movimiento.importeUnitario ?? '', movimiento.importeTotal ?? '',
-            movimiento.estado || ''
-        ]);
+    documento.setFontSize(18);
+    documento.setFont(undefined, 'bold');
+    documento.text('TESORERÍA MGP', margen, 16);
+
+    documento.setFontSize(12);
+    documento.setFont(undefined, 'normal');
+    documento.text('Reporte de movimientos', margen, 23);
+    documento.text(
+        'Período: ' + formatearFechaReporte(reporte.desde) + ' al ' + formatearFechaReporte(reporte.hasta),
+        285 - margen,
+        16,
+        { align: 'right' }
+    );
+
+    function agregarTabla(titulo, lista, total, inicioY) {
+
+        documento.setFontSize(12);
+        documento.setFont(undefined, 'bold');
+        documento.text(titulo, margen, inicioY);
+
+        const filas = lista.map(function (movimiento) {
+            const anulado = String(movimiento.estado || '').toUpperCase() === 'ANULADO';
+
+            return [
+                formatearFechaReporte(movimiento.fecha),
+                String(movimiento.boleta || ''),
+                String(movimiento.descripcion || ''),
+                String(Number(movimiento.cantidad) || 0),
+                formatearNumeroReporte(movimiento.importeUnitario),
+                formatearNumeroReporte(movimiento.importeTotal),
+                anulado ? 'ANULADO' : 'ACTIVO'
+            ];
+        });
+
+        if (!filas.length) {
+            filas.push(['', '', 'Sin movimientos en esta sección.', '', '', '', '']);
+        }
+
+        documento.autoTable({
+            startY: inicioY + 3,
+            head: [[
+                'Fecha', 'N° Boleta', 'Descripción', 'Cantidad',
+                'Importe Unitario', 'Importe Total', 'Estado'
+            ]],
+            body: filas,
+            theme: 'grid',
+            styles: {
+                fontSize: 8,
+                cellPadding: 2,
+                overflow: 'linebreak'
+            },
+            headStyles: {
+                fontStyle: 'bold'
+            },
+            columnStyles: {
+                0: { cellWidth: 23 },
+                1: { cellWidth: 28 },
+                2: { cellWidth: 78 },
+                3: { cellWidth: 18, halign: 'right' },
+                4: { cellWidth: 35, halign: 'right' },
+                5: { cellWidth: 32, halign: 'right' },
+                6: { cellWidth: 25 }
+            },
+            didParseCell: function (data) {
+                if (data.section === 'body' && data.row.index < lista.length) {
+                    const estado = String(lista[data.row.index].estado || '').toUpperCase();
+                    if (estado === 'ANULADO') {
+                        data.cell.text = data.cell.text;
+                        data.cell.styles.fontStyle = 'bold';
+                    }
+                }
+            }
+        });
+
+        const finalY = documento.lastAutoTable.finalY + 5;
+        documento.setFontSize(10);
+        documento.setFont(undefined, 'bold');
+        documento.text(
+            'Total ' + titulo.toLowerCase() + ': ' + formatearMoneda(total),
+            285 - margen,
+            finalY,
+            { align: 'right' }
+        );
+
+        return finalY + 9;
+    }
+
+    let siguienteY = agregarTabla(
+        'INGRESOS',
+        reporte.ingresos,
+        reporte.totalIngresos,
+        31
+    );
+
+    if (siguienteY > 170) {
+        documento.addPage();
+        siguienteY = 18;
+    }
+
+    siguienteY = agregarTabla(
+        'EGRESOS',
+        reporte.egresos,
+        reporte.totalEgresos,
+        siguienteY
+    );
+
+    if (siguienteY > 180) {
+        documento.addPage();
+        siguienteY = 18;
+    }
+
+    documento.setFontSize(12);
+    documento.setFont(undefined, 'bold');
+    documento.text('RESUMEN DEL PERÍODO', margen, siguienteY + 2);
+
+    documento.setFontSize(10);
+    documento.setFont(undefined, 'normal');
+
+    const resumen = [
+        ['Total ingresos', formatearMoneda(reporte.totalIngresos)],
+        ['Total egresos', formatearMoneda(reporte.totalEgresos)],
+        ['Saldo', formatearMoneda(reporte.saldo)],
+        ['Movimientos', String(reporte.datos.length)],
+        ['Anulados', String(reporte.anulados)]
+    ];
+
+    documento.autoTable({
+        startY: siguienteY + 5,
+        body: resumen,
+        theme: 'grid',
+        styles: {
+            fontSize: 9,
+            cellPadding: 2.5
+        },
+        columnStyles: {
+            0: { cellWidth: 55, fontStyle: 'bold' },
+            1: { cellWidth: 45, halign: 'right' }
+        },
+        margin: { left: margen }
     });
 
-    const csv = '\uFEFF' + filas.map(function (fila) {
-        return fila.map(escaparCSV).join(';');
-    }).join('\r\n');
+    documento.setFontSize(8);
+    documento.setFont(undefined, 'normal');
+    documento.text(
+        'Los movimientos ANULADOS se muestran como referencia y no se consideran en los totales.',
+        margen,
+        198
+    );
 
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const enlace = document.createElement('a');
-    enlace.href = url;
-    enlace.download = `tesoreria_mgp_${desde}_${hasta}.csv`;
-    document.body.appendChild(enlace);
-    enlace.click();
-    enlace.remove();
-    URL.revokeObjectURL(url);
+    documento.save(`tesoreria_mgp_${reporte.desde}_${reporte.hasta}.pdf`);
 }
 
 // ==================================================
