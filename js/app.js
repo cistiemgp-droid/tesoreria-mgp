@@ -759,7 +759,6 @@ async function enviarAPI(
     datos = {},
     incluirToken = true
 ) {
-
     const datosEnvio = {
         ...datos
     };
@@ -768,7 +767,6 @@ async function enviarAPI(
         incluirToken &&
         !datosEnvio.token
     ) {
-
         const token =
             localStorage.getItem(
                 CONFIG.STORAGE_TOKEN
@@ -777,133 +775,82 @@ async function enviarAPI(
         if (token) {
             datosEnvio.token = token;
         }
-
     }
 
-    const solicitudId =
-        'MGP_' +
+    const nombreCallback =
+        'tesoreriaMGP_' +
         Date.now() + '_' +
         Math.random()
             .toString(36)
             .substring(2);
 
     return await new Promise(function (resolve, reject) {
-
-        let finalizado = false;
-
-        const iframe =
-            document.createElement('iframe');
-
-        iframe.name =
-            'tesoreria_api_' + solicitudId;
-
-        iframe.style.display = 'none';
-
-        document.body.appendChild(iframe);
+        let terminado = false;
+        let script = null;
 
         const limpiar = function () {
-
-            window.removeEventListener(
-                'message',
-                recibirRespuesta
-            );
-
             clearTimeout(temporizador);
 
-            if (formularioEnvio && formularioEnvio.parentNode) {
-                formularioEnvio.parentNode.removeChild(
-                    formularioEnvio
-                );
+            if (script && script.parentNode) {
+                script.parentNode.removeChild(script);
             }
 
-            if (iframe.parentNode) {
-                iframe.parentNode.removeChild(
-                    iframe
+            try {
+                delete window[nombreCallback];
+            } catch (error) {
+                console.warn(
+                    'No fue posible eliminar callback:',
+                    error
                 );
             }
-
         };
 
         const terminar = function (callback, valor) {
-
-            if (finalizado) {
+            if (terminado) {
                 return;
             }
 
-            finalizado = true;
+            terminado = true;
             limpiar();
             callback(valor);
-
         };
 
-        const recibirRespuesta = function (evento) {
-
-            if (
-                !evento.data ||
-                evento.data.tipo !==
-                    'TESORERIA_MGP_API'
-            ) {
-                return;
-            }
-
-            if (
-                String(evento.data.id || '') !==
-                solicitudId
-            ) {
-                return;
-            }
-
+        window[nombreCallback] = function (respuesta) {
             terminar(
                 resolve,
-                evento.data.respuesta
+                respuesta
+            );
+        };
+
+        script =
+            document.createElement('script');
+
+        const payload =
+            encodeURIComponent(
+                JSON.stringify(datosEnvio)
             );
 
+        script.src =
+            CONFIG.API_URL +
+            '?accion=' +
+            encodeURIComponent(accion) +
+            '&payload=' +
+            payload +
+            '&callback=' +
+            encodeURIComponent(nombreCallback) +
+            '&_=' +
+            Date.now();
+
+        script.async = true;
+
+        script.onerror = function () {
+            terminar(
+                reject,
+                new Error(
+                    'No se pudo comunicar con el servidor de Tesorería.'
+                )
+            );
         };
-
-        window.addEventListener(
-            'message',
-            recibirRespuesta
-        );
-
-        const formularioEnvio =
-            document.createElement('form');
-
-        formularioEnvio.method = 'POST';
-        formularioEnvio.action = CONFIG.API_URL;
-        formularioEnvio.target = iframe.name;
-        formularioEnvio.style.display = 'none';
-
-        const agregarCampo = function (nombre, valor) {
-
-            const campo =
-                document.createElement('input');
-
-            campo.type = 'hidden';
-            campo.name = nombre;
-            campo.value = valor;
-
-            formularioEnvio.appendChild(campo);
-
-        };
-
-        agregarCampo(
-            'accion',
-            accion
-        );
-
-        agregarCampo(
-            'solicitudId',
-            solicitudId
-        );
-
-        agregarCampo(
-            'payload',
-            JSON.stringify(datosEnvio)
-        );
-
-        document.body.appendChild(
-            formularioEnvio
-        );
 
         const temporizador =
             setTimeout(
@@ -919,10 +866,8 @@ async function enviarAPI(
                 20000
             );
 
-        formularioEnvio.submit();
-
+        document.head.appendChild(script);
     });
-
 }
 
 
