@@ -112,6 +112,12 @@ const btnGenerarReporte =
 const btnDescargarReporte =
     document.getElementById('btnDescargarReporte');
 
+const resultadoReporte =
+    document.getElementById('resultadoReporte');
+
+let movimientoEditandoId = null;
+let movimientosActuales = [];
+
 
 // ==================================================
 // INICIO
@@ -460,6 +466,15 @@ function configurarEventos() {
         descargarReporte
     );
 
+    tablaMovimientos.addEventListener('click', function (evento) {
+        const boton = evento.target.closest('button[data-accion]');
+        if (!boton) return;
+        const accion = boton.dataset.accion;
+        const id = boton.dataset.id;
+        if (accion === 'editar') editarMovimientoDesdeTabla(id);
+        if (accion === 'anular') anularMovimientoDesdeTabla(id);
+    });
+
 }
 
 
@@ -467,39 +482,42 @@ function configurarEventos() {
 // FORMULARIO
 // ==================================================
 
-function abrirFormulario(tipo) {
+function abrirFormulario(tipo, movimiento = null) {
+
+    movimientoEditandoId = movimiento ? String(movimiento.id || '') : null;
 
     tipoInput.value = tipo;
 
     if (tipo === 'INGRESO') {
-
-        tituloFormulario.textContent =
-            'Registrar ingreso';
-
+        tituloFormulario.textContent = 'Registrar ingreso';
     } else {
-
-        tituloFormulario.textContent =
-            'Registrar egreso';
-
+        tituloFormulario.textContent = 'Registrar egreso';
     }
 
     formulario.classList.remove('oculto');
-
     movimientoForm.reset();
-
     tipoInput.value = tipo;
 
-    establecerFechaActual();
+    if (movimiento) {
+        fechaInput.value = movimiento.fecha || '';
+        boletaInput.value = movimiento.boleta || '';
+        cantidadInput.value = movimiento.cantidad ?? '';
+        descripcionInput.value = movimiento.descripcion || '';
+        importeUnitarioInput.value = movimiento.importeUnitario ?? '';
+        btnGuardar.textContent = 'Actualizar movimiento';
+    } else {
+        establecerFechaActual();
+        importeTotalInput.value = 'S/ 0.00';
+        btnGuardar.textContent = 'Guardar movimiento';
+    }
 
-    importeTotalInput.value = 'S/ 0.00';
-
+    calcularImporteTotal();
     boletaInput.focus();
 
     formulario.scrollIntoView({
         behavior: 'smooth',
         block: 'start'
     });
-
 }
 
 
@@ -507,12 +525,11 @@ function cerrarFormulario() {
 
     formulario.classList.add('oculto');
 
+    movimientoEditandoId = null;
     movimientoForm.reset();
-
     tipoInput.value = '';
-
     importeTotalInput.value = 'S/ 0.00';
-
+    btnGuardar.textContent = 'Guardar movimiento';
     establecerFechaActual();
 
 }
@@ -708,10 +725,18 @@ async function guardarMovimiento(evento) {
             'Guardando...';
 
 
+        const accion = movimientoEditandoId
+            ? 'editarMovimiento'
+            : 'registrarMovimiento';
+
+        const datosEnvio = movimientoEditandoId
+            ? { ...datos, id: movimientoEditandoId }
+            : datos;
+
         const respuesta =
             await enviarAPI(
-                'registrarMovimiento',
-                datos
+                accion,
+                datosEnvio
             );
 
 
@@ -727,7 +752,9 @@ async function guardarMovimiento(evento) {
 
 
         alert(
-            'Movimiento registrado correctamente.'
+            movimientoEditandoId
+                ? 'Movimiento actualizado correctamente.'
+                : 'Movimiento registrado correctamente.'
         );
 
 
@@ -1012,204 +1039,245 @@ function actualizarResumen(datos) {
 
 function mostrarMovimientos(movimientos) {
 
+    movimientosActuales = Array.isArray(movimientos)
+        ? movimientos.slice()
+        : [];
+
     tablaMovimientos.innerHTML = '';
 
-
-    if (
-        !movimientos ||
-        movimientos.length === 0
-    ) {
-
+    if (movimientosActuales.length === 0) {
         tablaMovimientos.innerHTML = `
-
             <tr>
-
-                <td
-                    colspan="7"
-                    class="tabla-vacia">
-
+                <td colspan="8" class="tabla-vacia">
                     No hay movimientos registrados.
-
                 </td>
-
             </tr>
-
         `;
-
         return;
-
     }
 
+    movimientosActuales.forEach(function (movimiento) {
+        const fila = document.createElement('tr');
+        const claseTipo = movimiento.tipo === 'INGRESO'
+            ? 'tipo-ingreso'
+            : 'tipo-egreso';
+        const estadoAnulado = String(movimiento.estado || '').toUpperCase() === 'ANULADO';
 
-    movimientos.forEach(function (movimiento) {
+        if (estadoAnulado) fila.classList.add('movimiento-anulado');
 
-        const fila =
-            document.createElement('tr');
-
-
-        const claseTipo =
-            movimiento.tipo === 'INGRESO'
-                ? 'tipo-ingreso'
-                : 'tipo-egreso';
-
+        const acciones = estadoAnulado
+            ? '<span class="estado-anulado">ANULADO</span>'
+            : `
+                <button type="button" class="btn-tabla btn-editar" data-accion="editar" data-id="${escaparHTML(movimiento.id)}">Editar</button>
+                <button type="button" class="btn-tabla btn-anular" data-accion="anular" data-id="${escaparHTML(movimiento.id)}">Anular</button>
+              `;
 
         fila.innerHTML = `
-
-            <td>
-                ${escaparHTML(movimiento.fecha)}
-            </td>
-
-            <td>
-
-                <span class="${claseTipo}">
-                    ${escaparHTML(movimiento.tipo)}
-                </span>
-
-            </td>
-
-            <td>
-                ${escaparHTML(movimiento.boleta)}
-            </td>
-
-            <td>
-                ${escaparHTML(movimiento.descripcion)}
-            </td>
-
-            <td>
-                ${Number(movimiento.cantidad || 0)}
-            </td>
-
-            <td>
-                ${formatearMoneda(
-                    movimiento.importeUnitario
-                )}
-            </td>
-
-            <td>
-
-                <strong>
-                    ${formatearMoneda(
-                        movimiento.importeTotal
-                    )}
-                </strong>
-
-            </td>
-
+            <td>${escaparHTML(movimiento.fecha)}</td>
+            <td><span class="${claseTipo}">${escaparHTML(movimiento.tipo)}</span></td>
+            <td>${escaparHTML(movimiento.boleta)}</td>
+            <td>${escaparHTML(movimiento.descripcion)}</td>
+            <td>${Number(movimiento.cantidad || 0)}</td>
+            <td>${formatearMoneda(movimiento.importeUnitario)}</td>
+            <td><strong>${formatearMoneda(movimiento.importeTotal)}</strong></td>
+            <td class="celda-acciones">${acciones}</td>
         `;
 
-
         tablaMovimientos.appendChild(fila);
-
     });
-
 }
 
+function obtenerMovimientoPorId(id) {
+    return movimientosActuales.find(function (movimiento) {
+        return String(movimiento.id) === String(id);
+    }) || null;
+}
+
+function editarMovimientoDesdeTabla(id) {
+    const movimiento = obtenerMovimientoPorId(id);
+    if (!movimiento) {
+        alert('No se encontró el movimiento seleccionado.');
+        return;
+    }
+    if (String(movimiento.estado || '').toUpperCase() === 'ANULADO') {
+        alert('No se puede editar un movimiento anulado.');
+        return;
+    }
+    abrirFormulario(movimiento.tipo, movimiento);
+}
+
+async function anularMovimientoDesdeTabla(id) {
+    const movimiento = obtenerMovimientoPorId(id);
+    if (!movimiento) {
+        alert('No se encontró el movimiento seleccionado.');
+        return;
+    }
+    if (String(movimiento.estado || '').toUpperCase() === 'ANULADO') {
+        alert('El movimiento ya está anulado.');
+        return;
+    }
+
+    const motivo = window.prompt('Ingrese el motivo de la anulación:', '');
+    if (motivo === null) return;
+    if (!motivo.trim()) {
+        alert('Debe indicar el motivo de la anulación.');
+        return;
+    }
+
+    const token = localStorage.getItem(CONFIG.STORAGE_TOKEN);
+    if (!token) {
+        mostrarLogin();
+        return;
+    }
+
+    try {
+        const respuesta = await enviarAPI('anularMovimiento', {
+            id: id,
+            motivo: motivo.trim()
+        });
+
+        if (!respuesta || !respuesta.ok) {
+            throw new Error(
+                respuesta && (respuesta.error || respuesta.mensaje)
+                    ? (respuesta.error || respuesta.mensaje)
+                    : 'No se pudo anular el movimiento.'
+            );
+        }
+
+        alert('Movimiento anulado correctamente.');
+        await cargarDatos();
+    } catch (error) {
+        console.error(error);
+        alert(error.message || 'Ocurrió un error al anular el movimiento.');
+    }
+}
 
 // ==================================================
 // REPORTE
 // ==================================================
 
 function generarReporte() {
-
-    const desde =
-        fechaDesde.value;
-
-    const hasta =
-        fechaHasta.value;
-
+    const desde = fechaDesde.value;
+    const hasta = fechaHasta.value;
 
     if (!desde || !hasta) {
-
-        alert(
-            'Seleccione la fecha inicial y final.'
-        );
-
+        alert('Seleccione la fecha inicial y final.');
         return;
-
     }
-
-
     if (desde > hasta) {
-
-        alert(
-            'La fecha inicial no puede ser mayor que la fecha final.'
-        );
-
+        alert('La fecha inicial no puede ser mayor que la fecha final.');
         return;
-
     }
 
+    const datos = movimientosActuales.filter(function (movimiento) {
+        const fecha = String(movimiento.fecha || '');
+        return fecha >= desde && fecha <= hasta;
+    });
 
-    if (!CONFIG.API_URL) {
+    let ingresos = 0;
+    let egresos = 0;
+    let anulados = 0;
 
-        alert(
-            'El reporte está listo, pero todavía falta conectar la API.'
-        );
+    datos.forEach(function (movimiento) {
+        if (String(movimiento.estado || '').toUpperCase() === 'ANULADO') {
+            anulados++;
+            return;
+        }
+        const total = Number(movimiento.importeTotal) || 0;
+        if (movimiento.tipo === 'INGRESO') ingresos += total;
+        if (movimiento.tipo === 'EGRESO') egresos += total;
+    });
 
-        return;
+    resultadoReporte.innerHTML = `
+        <div class="reporte-resumen">
+            <div><span>Movimientos</span><strong>${datos.length}</strong></div>
+            <div><span>Ingresos</span><strong>${formatearMoneda(ingresos)}</strong></div>
+            <div><span>Egresos</span><strong>${formatearMoneda(egresos)}</strong></div>
+            <div><span>Saldo</span><strong>${formatearMoneda(ingresos - egresos)}</strong></div>
+            <div><span>Anulados</span><strong>${anulados}</strong></div>
+        </div>
+        <div class="tabla-contenedor reporte-tabla">
+            <table>
+                <thead><tr>
+                    <th>Fecha</th><th>Tipo</th><th>Boleta</th><th>Descripción</th>
+                    <th>Cantidad</th><th>Unitario</th><th>Total</th><th>Estado</th>
+                </tr></thead>
+                <tbody>
+                    ${datos.length === 0
+                        ? '<tr><td colspan="8" class="tabla-vacia">No hay movimientos en el período seleccionado.</td></tr>'
+                        : datos.map(function (movimiento) {
+                            const anulado = String(movimiento.estado || '').toUpperCase() === 'ANULADO';
+                            const clase = movimiento.tipo === 'INGRESO' ? 'tipo-ingreso' : 'tipo-egreso';
+                            return `<tr class="${anulado ? 'movimiento-anulado' : ''}">
+                                <td>${escaparHTML(movimiento.fecha)}</td>
+                                <td><span class="${clase}">${escaparHTML(movimiento.tipo)}</span></td>
+                                <td>${escaparHTML(movimiento.boleta)}</td>
+                                <td>${escaparHTML(movimiento.descripcion)}</td>
+                                <td>${Number(movimiento.cantidad || 0)}</td>
+                                <td>${formatearMoneda(movimiento.importeUnitario)}</td>
+                                <td><strong>${formatearMoneda(movimiento.importeTotal)}</strong></td>
+                                <td>${anulado ? '<span class="estado-anulado">ANULADO</span>' : 'ACTIVO'}</td>
+                            </tr>`;
+                        }).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
 
-    }
-
-
-    console.log(
-        'Generar reporte:',
-        desde,
-        hasta
-    );
-
+    resultadoReporte.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+function escaparCSV(valor) {
+    const texto = String(valor ?? '');
+    return '"' + texto.replace(/"/g, '""') + '"';
+}
 
 function descargarReporte() {
-
-    const desde =
-        fechaDesde.value;
-
-    const hasta =
-        fechaHasta.value;
-
+    const desde = fechaDesde.value;
+    const hasta = fechaHasta.value;
 
     if (!desde || !hasta) {
-
-        alert(
-            'Seleccione la fecha inicial y final.'
-        );
-
+        alert('Seleccione la fecha inicial y final.');
         return;
-
     }
-
-
     if (desde > hasta) {
-
-        alert(
-            'La fecha inicial no puede ser mayor que la fecha final.'
-        );
-
+        alert('La fecha inicial no puede ser mayor que la fecha final.');
         return;
-
     }
 
+    const datos = movimientosActuales.filter(function (movimiento) {
+        const fecha = String(movimiento.fecha || '');
+        return fecha >= desde && fecha <= hasta;
+    });
 
-    if (!CONFIG.API_URL) {
+    const filas = [[
+        'Fecha','Tipo','N° Boleta','Descripción','Cantidad',
+        'Importe Unitario','Importe Total','Estado'
+    ]];
 
-        alert(
-            'La descarga estará disponible cuando conectemos la API.'
-        );
+    datos.forEach(function (movimiento) {
+        filas.push([
+            movimiento.fecha || '', movimiento.tipo || '', movimiento.boleta || '',
+            movimiento.descripcion || '', movimiento.cantidad ?? '',
+            movimiento.importeUnitario ?? '', movimiento.importeTotal ?? '',
+            movimiento.estado || ''
+        ]);
+    });
 
-        return;
+    const csv = '\uFEFF' + filas.map(function (fila) {
+        return fila.map(escaparCSV).join(';');
+    }).join('\r\n');
 
-    }
-
-
-    console.log(
-        'Descargar reporte:',
-        desde,
-        hasta
-    );
-
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const enlace = document.createElement('a');
+    enlace.href = url;
+    enlace.download = `tesoreria_mgp_${desde}_${hasta}.csv`;
+    document.body.appendChild(enlace);
+    enlace.click();
+    enlace.remove();
+    URL.revokeObjectURL(url);
 }
-
 
 // ==================================================
 // SEGURIDAD BÁSICA
