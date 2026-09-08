@@ -759,91 +759,67 @@ async function enviarAPI(
     datos = {},
     incluirToken = true
 ) {
-    const datosEnvio = {
-        ...datos
-    };
+    const datosEnvio = { ...datos };
 
-    if (
-        incluirToken &&
-        !datosEnvio.token
-    ) {
-        const token =
-            localStorage.getItem(
-                CONFIG.STORAGE_TOKEN
-            );
-
-        if (token) {
-            datosEnvio.token = token;
-        }
+    if (incluirToken && !datosEnvio.token) {
+        const token = localStorage.getItem(
+            CONFIG.STORAGE_TOKEN
+        );
+        if (token) datosEnvio.token = token;
     }
 
-    const nombreCallback =
-        'tesoreriaMGP_' +
-        Date.now() + '_' +
-        Math.random()
-            .toString(36)
-            .substring(2);
+    return await new Promise(function(resolve, reject) {
+        const callback =
+            'tesoreriaMGP_' +
+            Date.now() + '_' +
+            Math.random().toString(36).substring(2);
 
-    return await new Promise(function (resolve, reject) {
         let terminado = false;
         let script = null;
+        let temporizador = null;
 
-        const limpiar = function () {
-            clearTimeout(temporizador);
-
+        function limpiar() {
+            if (temporizador) clearTimeout(temporizador);
             if (script && script.parentNode) {
                 script.parentNode.removeChild(script);
             }
+            try { delete window[callback]; } catch (error) {}
+        }
 
-            try {
-                delete window[nombreCallback];
-            } catch (error) {
-                console.warn(
-                    'No fue posible eliminar callback:',
-                    error
-                );
-            }
-        };
-
-        const terminar = function (callback, valor) {
-            if (terminado) {
-                return;
-            }
-
+        function terminar(fn, valor) {
+            if (terminado) return;
             terminado = true;
             limpiar();
-            callback(valor);
+            fn(valor);
+        }
+
+        window[callback] = function(respuesta) {
+            terminar(resolve, respuesta);
         };
 
-        window[nombreCallback] = function (respuesta) {
-            terminar(
-                resolve,
-                respuesta
-            );
-        };
+        const parametros = new URLSearchParams();
+        parametros.set('accion', accion);
+        parametros.set('callback', callback);
+        parametros.set('payload', JSON.stringify(datosEnvio));
 
-        script =
-            document.createElement('script');
+        Object.keys(datosEnvio).forEach(function(clave) {
+            const valor = datosEnvio[clave];
+            if (valor !== undefined && valor !== null) {
+                parametros.set(clave, String(valor));
+            }
+        });
 
-        const payload =
-            encodeURIComponent(
-                JSON.stringify(datosEnvio)
-            );
-
+        script = document.createElement('script');
         script.src =
             CONFIG.API_URL +
-            '?accion=' +
-            encodeURIComponent(accion) +
-            '&payload=' +
-            payload +
-            '&callback=' +
-            encodeURIComponent(nombreCallback) +
+            '?' +
+            parametros.toString() +
             '&_=' +
             Date.now();
 
         script.async = true;
 
-        script.onerror = function () {
+        script.onerror = function() {
             terminar(
                 reject,
                 new Error(
@@ -852,24 +828,18 @@ async function enviarAPI(
             );
         };
 
-        const temporizador =
-            setTimeout(
-                function () {
-                    terminar(
-                        reject,
-                        new Error(
-                            'No se pudo conectar con el servidor de Tesorería. ' +
-                            'La solicitud superó los 20 segundos.'
-                        )
-                    );
-                },
-                20000
+        temporizador = setTimeout(function() {
+            terminar(
+                reject,
+                new Error(
+                    'El servidor no respondió dentro de 20 segundos.'
+                )
             );
+        }, 20000);
 
         document.head.appendChild(script);
     });
 }
-
 
 // ==================================================
 // CARGAR DATOS
