@@ -91,6 +91,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     calcularImporteTotal();
 
+    cargarDatos();
 });
 
 
