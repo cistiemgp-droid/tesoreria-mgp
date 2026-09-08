@@ -8,14 +8,8 @@
 // ==================================================
 
 const CONFIG = {
-
-    // IMPORTANTE:
-    // Aquí colocaremos posteriormente la URL
-    // de nuestra API de Google Apps Script.
-    API_URL: ''
-
+    API_URL: 'https://script.google.com/macros/s/AKfycbxiODFMTjypL7GmoLZjMfpxUk_UmnMt2WgLmbkNyEE9eI2Tnnnxp4BOhVQZrRfLJkWH/exec'
 };
-
 
 // ==================================================
 // ELEMENTOS DEL DOM
