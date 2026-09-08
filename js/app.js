@@ -760,9 +760,6 @@ async function enviarAPI(
     incluirToken = true
 ) {
 
-    const url =
-        `${CONFIG.API_URL}?accion=${encodeURIComponent(accion)}`;
-
     const datosEnvio = {
         ...datos
     };
@@ -783,105 +780,148 @@ async function enviarAPI(
 
     }
 
-    const controlador =
-        new AbortController();
+    const solicitudId =
+        'MGP_' +
+        Date.now() + '_' +
+        Math.random()
+            .toString(36)
+            .substring(2);
 
-    const temporizador =
-        setTimeout(
-            function () {
-                controlador.abort();
-            },
-            CONFIG.API_TIMEOUT_MS
+    return await new Promise(function (resolve, reject) {
+
+        let finalizado = false;
+
+        const iframe =
+            document.createElement('iframe');
+
+        iframe.name =
+            'tesoreria_api_' + solicitudId;
+
+        iframe.style.display = 'none';
+
+        document.body.appendChild(iframe);
+
+        const limpiar = function () {
+
+            window.removeEventListener(
+                'message',
+                recibirRespuesta
+            );
+
+            clearTimeout(temporizador);
+
+            if (formularioEnvio && formularioEnvio.parentNode) {
+                formularioEnvio.parentNode.removeChild(
+                    formularioEnvio
+                );
+            }
+
+            if (iframe.parentNode) {
+                iframe.parentNode.removeChild(
+                    iframe
+                );
+            }
+
+        };
+
+        const terminar = function (callback, valor) {
+
+            if (finalizado) {
+                return;
+            }
+
+            finalizado = true;
+            limpiar();
+            callback(valor);
+
+        };
+
+        const recibirRespuesta = function (evento) {
+
+            if (
+                !evento.data ||
+                evento.data.tipo !==
+                    'TESORERIA_MGP_API'
+            ) {
+                return;
+            }
+
+            if (
+                String(evento.data.id || '') !==
+                solicitudId
+            ) {
+                return;
+            }
+
+            terminar(
+                resolve,
+                evento.data.respuesta
+            );
+
+        };
+
+        window.addEventListener(
+            'message',
+            recibirRespuesta
         );
 
-    try {
+        const formularioEnvio =
+            document.createElement('form');
 
-        const respuesta =
-            await fetch(
-                url,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type':
-                            'text/plain;charset=utf-8'
-                    },
-                    body:
-                        JSON.stringify(datosEnvio),
-                    cache: 'no-store',
-                    redirect: 'follow',
-                    signal:
-                        controlador.signal
-                }
+        formularioEnvio.method = 'POST';
+        formularioEnvio.action = CONFIG.API_URL;
+        formularioEnvio.target = iframe.name;
+        formularioEnvio.style.display = 'none';
+
+        const agregarCampo = function (nombre, valor) {
+
+            const campo =
+                document.createElement('input');
+
+            campo.type = 'hidden';
+            campo.name = nombre;
+            campo.value = valor;
+
+            formularioEnvio.appendChild(campo);
+
+        };
+
+        agregarCampo(
+            'accion',
+            accion
+        );
+
+        agregarCampo(
+            'solicitudId',
+            solicitudId
+        );
+
+        agregarCampo(
+            'payload',
+            JSON.stringify(datosEnvio)
+        );
+
+        document.body.appendChild(
+            formularioEnvio
+        );
+
+        const temporizador =
+            setTimeout(
+                function () {
+                    terminar(
+                        reject,
+                        new Error(
+                            'No se pudo conectar con el servidor de Tesorería. ' +
+                            'La solicitud superó los 20 segundos.'
+                        )
+                    );
+                },
+                20000
             );
 
-        if (!respuesta.ok) {
+        formularioEnvio.submit();
 
-            throw new Error(
-                'El servidor respondió con error HTTP ' +
-                respuesta.status +
-                '.'
-            );
-
-        }
-
-        const texto =
-            await respuesta.text();
-
-        if (!texto) {
-
-            throw new Error(
-                'El servidor no devolvió una respuesta.'
-            );
-
-        }
-
-        try {
-
-            return JSON.parse(texto);
-
-        } catch (error) {
-
-            console.error(
-                'Respuesta recibida del servidor:',
-                texto
-            );
-
-            throw new Error(
-                'El servidor devolvió una respuesta no válida.'
-            );
-
-        }
-
-    } catch (error) {
-
-        if (error.name === 'AbortError') {
-
-            throw new Error(
-                'No se pudo conectar con el servidor de Tesorería. ' +
-                'La solicitud superó los 15 segundos.'
-            );
-
-        }
-
-        if (
-            error instanceof TypeError ||
-            error.message === 'Failed to fetch'
-        ) {
-
-            throw new Error(
-                'No se pudo comunicar con Google Apps Script. ' +
-                'Verifique la publicación de la API y su acceso.'
-            );
-
-        }
-
-        throw error;
-
-    } finally {
-
-        clearTimeout(temporizador);
-
-    }
+    });
 
 }
 
