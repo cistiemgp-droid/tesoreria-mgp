@@ -127,6 +127,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     calcularImporteTotal();
 
+    // Estado inicial seguro: SOLO LOGIN visible.
+    mostrarLogin();
     comprobarSesion();
 
 });
@@ -337,7 +339,10 @@ async function comprobarSesion() {
 function mostrarAplicacion() {
 
     pantallaLogin.hidden = true;
+    pantallaLogin.style.display = 'none';
+
     aplicacion.hidden = false;
+    aplicacion.style.display = 'block';
 
 }
 
@@ -345,7 +350,10 @@ function mostrarAplicacion() {
 function mostrarLogin() {
 
     aplicacion.hidden = true;
+    aplicacion.style.display = 'none';
+
     pantallaLogin.hidden = false;
+    pantallaLogin.style.display = 'flex';
 
     loginMensaje.style.display = 'none';
 
@@ -759,87 +767,132 @@ async function enviarAPI(
     datos = {},
     incluirToken = true
 ) {
-    const datosEnvio = { ...datos };
 
-    if (incluirToken && !datosEnvio.token) {
-        const token = localStorage.getItem(
-            CONFIG.STORAGE_TOKEN
-        );
-        if (token) datosEnvio.token = token;
+    const url =
+        `${CONFIG.API_URL}?accion=${encodeURIComponent(accion)}`;
+
+    const datosEnvio = {
+        ...datos
+    };
+
+    if (
+        incluirToken &&
+        !datosEnvio.token
+    ) {
+
+        const token =
+            localStorage.getItem(
+                CONFIG.STORAGE_TOKEN
+            );
+
+        if (token) {
+            datosEnvio.token = token;
+        }
+
     }
 
-    return await new Promise(function(resolve, reject) {
-        const callback =
-            'tesoreriaMGP_' +
-            Date.now() + '_' +
-            Math.random().toString(36).substring(2);
+    const controlador =
+        new AbortController();
 
-        let terminado = false;
-        let script = null;
-        let temporizador = null;
+    const temporizador =
+        setTimeout(
+            function () {
+                controlador.abort();
+            },
+            CONFIG.API_TIMEOUT_MS
+        );
 
-        function limpiar() {
-            if (temporizador) clearTimeout(temporizador);
-            if (script && script.parentNode) {
-                script.parentNode.removeChild(script);
-            }
-            try { delete window[callback]; } catch (error) {}
+    try {
+
+        const respuesta =
+            await fetch(
+                url,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type':
+                            'text/plain;charset=utf-8'
+                    },
+                    body:
+                        JSON.stringify(datosEnvio),
+                    cache: 'no-store',
+                    redirect: 'follow',
+                    signal:
+                        controlador.signal
+                }
+            );
+
+        if (!respuesta.ok) {
+
+            throw new Error(
+                'El servidor respondió con error HTTP ' +
+                respuesta.status +
+                '.'
+            );
+
         }
 
-        function terminar(fn, valor) {
-            if (terminado) return;
-            terminado = true;
-            limpiar();
-            fn(valor);
+        const texto =
+            await respuesta.text();
+
+        if (!texto) {
+
+            throw new Error(
+                'El servidor no devolvió una respuesta.'
+            );
+
         }
 
-        window[callback] = function(respuesta) {
-            terminar(resolve, respuesta);
-        };
+        try {
 
-        const parametros = new URLSearchParams();
-        parametros.set('accion', accion);
-        parametros.set('callback', callback);
-        parametros.set('payload', JSON.stringify(datosEnvio));
+            return JSON.parse(texto);
 
-        Object.keys(datosEnvio).forEach(function(clave) {
-            const valor = datosEnvio[clave];
-            if (valor !== undefined && valor !== null) {
-                parametros.set(clave, String(valor));
-            }
-        });
+        } catch (error) {
 
-        script = document.createElement('script');
-        script.src =
-            CONFIG.API_URL +
-            '?' +
-            parametros.toString() +
-            '&_=' +
-            Date.now();
-
-        script.async = true;
-
-        script.onerror = function() {
-            terminar(
-                reject,
-                new Error(
-                    'No se pudo comunicar con el servidor de Tesorería.'
-                )
+            console.error(
+                'Respuesta recibida del servidor:',
+                texto
             );
-        };
 
-        temporizador = setTimeout(function() {
-            terminar(
-                reject,
-                new Error(
-                    'El servidor no respondió dentro de 20 segundos.'
-                )
+            throw new Error(
+                'El servidor devolvió una respuesta no válida.'
             );
-        }, 20000);
 
-        document.head.appendChild(script);
-    });
+        }
+
+    } catch (error) {
+
+        if (error.name === 'AbortError') {
+
+            throw new Error(
+                'No se pudo conectar con el servidor de Tesorería. ' +
+                'La solicitud superó los 15 segundos.'
+            );
+
+        }
+
+        if (
+            error instanceof TypeError ||
+            error.message === 'Failed to fetch'
+        ) {
+
+            throw new Error(
+                'No se pudo comunicar con Google Apps Script. ' +
+                'Verifique la publicación de la API y su acceso.'
+            );
+
+        }
+
+        throw error;
+
+    } finally {
+
+        clearTimeout(temporizador);
+
+    }
+
 }
+
 
 // ==================================================
 // CARGAR DATOS
