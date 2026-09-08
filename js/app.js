@@ -9,7 +9,8 @@
 
 const CONFIG = {
     API_URL: 'https://script.google.com/macros/s/AKfycbxiODFMTjypL7GmoLZjMfpxUk_UmnMt2WgLmbkNyEE9eI2Tnnnxp4BOhVQZrRfLJkWH/exec',
-    STORAGE_TOKEN: 'TESORERIA_MGP_TOKEN'
+    STORAGE_TOKEN: 'TESORERIA_MGP_TOKEN',
+    API_TIMEOUT_MS: 15000
 };
 
 
@@ -241,7 +242,18 @@ async function iniciarSesion(evento) {
 
         loginForm.reset();
 
-        await cargarDatos();
+        try {
+
+            await cargarDatos();
+
+        } catch (error) {
+
+            console.error(
+                'La sesión inició correctamente, pero no se pudieron cargar los datos:',
+                error
+            );
+
+        }
 
     } catch (error) {
 
@@ -771,34 +783,105 @@ async function enviarAPI(
 
     }
 
+    const controlador =
+        new AbortController();
 
-    const opciones = {
-
-        method: 'POST',
-
-        headers: {
-            'Content-Type': 'text/plain;charset=utf-8'
-        },
-
-        body: JSON.stringify(datosEnvio)
-
-    };
-
-
-    const respuesta =
-        await fetch(url, opciones);
-
-
-    if (!respuesta.ok) {
-
-        throw new Error(
-            'Error de comunicación con el servidor.'
+    const temporizador =
+        setTimeout(
+            function () {
+                controlador.abort();
+            },
+            CONFIG.API_TIMEOUT_MS
         );
 
+    try {
+
+        const respuesta =
+            await fetch(
+                url,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type':
+                            'text/plain;charset=utf-8'
+                    },
+                    body:
+                        JSON.stringify(datosEnvio),
+                    cache: 'no-store',
+                    redirect: 'follow',
+                    signal:
+                        controlador.signal
+                }
+            );
+
+        if (!respuesta.ok) {
+
+            throw new Error(
+                'El servidor respondió con error HTTP ' +
+                respuesta.status +
+                '.'
+            );
+
+        }
+
+        const texto =
+            await respuesta.text();
+
+        if (!texto) {
+
+            throw new Error(
+                'El servidor no devolvió una respuesta.'
+            );
+
+        }
+
+        try {
+
+            return JSON.parse(texto);
+
+        } catch (error) {
+
+            console.error(
+                'Respuesta recibida del servidor:',
+                texto
+            );
+
+            throw new Error(
+                'El servidor devolvió una respuesta no válida.'
+            );
+
+        }
+
+    } catch (error) {
+
+        if (error.name === 'AbortError') {
+
+            throw new Error(
+                'No se pudo conectar con el servidor de Tesorería. ' +
+                'La solicitud superó los 15 segundos.'
+            );
+
+        }
+
+        if (
+            error instanceof TypeError ||
+            error.message === 'Failed to fetch'
+        ) {
+
+            throw new Error(
+                'No se pudo comunicar con Google Apps Script. ' +
+                'Verifique la publicación de la API y su acceso.'
+            );
+
+        }
+
+        throw error;
+
+    } finally {
+
+        clearTimeout(temporizador);
+
     }
-
-
-    return await respuesta.json();
 
 }
 
