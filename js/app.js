@@ -996,70 +996,141 @@ async function cargarDatos() {
         );
 
     if (!CONFIG.API_URL || !token) {
-
         return;
-
     }
 
+    let ultimoError = null;
 
-    try {
+    // La consulta de lectura puede repetirse de forma segura.
+    // Esto NO reenvía registros ni modifica la hoja.
+    for (let intento = 1; intento <= 2; intento++) {
 
-        const respuesta =
-            await enviarAPI(
-                'obtenerDatos'
+        try {
+
+            if (intento === 2) {
+                mostrarMensajeCargaDatos(
+                    'Reintentando cargar los movimientos...'
+                );
+            }
+
+            const respuesta =
+                await enviarAPI(
+                    'obtenerDatos',
+                    {},
+                    true,
+                    20000
+                );
+
+            if (!respuesta || !respuesta.ok) {
+                throw new Error(
+                    respuesta &&
+                    (respuesta.error || respuesta.mensaje)
+                        ? (respuesta.error || respuesta.mensaje)
+                        : 'El servidor no devolvió correctamente los datos.'
+                );
+            }
+
+            if (!respuesta.resumen) {
+                throw new Error(
+                    'El servidor respondió, pero no devolvió el resumen de Tesorería.'
+                );
+            }
+
+            if (!Array.isArray(respuesta.movimientos)) {
+                throw new Error(
+                    'El servidor respondió, pero no devolvió la lista de movimientos.'
+                );
+            }
+
+            // Solo actualizamos la pantalla cuando la respuesta está completa.
+            actualizarResumen(
+                respuesta.resumen
             );
 
-
-        if (!respuesta.ok) {
-
-            throw new Error(
-                respuesta.error ||
-                respuesta.mensaje ||
-                'No se pudieron cargar los datos.'
+            mostrarMovimientos(
+                respuesta.movimientos
             );
 
+            limpiarMensajeCargaDatos();
+            return;
+
+        } catch (error) {
+
+            ultimoError = error;
+
+            console.error(
+                'Error cargando datos. Intento ' + intento + ':',
+                error
+            );
+
+            const mensaje =
+                String(error && error.message || '').toLowerCase();
+
+            const esSesion =
+                mensaje.includes('sesión') ||
+                mensaje.includes('token') ||
+                mensaje.includes('usuario');
+
+            if (esSesion) {
+                localStorage.removeItem(
+                    CONFIG.STORAGE_TOKEN
+                );
+
+                limpiarMensajeCargaDatos();
+                mostrarLogin();
+                return;
+            }
+
+            if (intento < 2) {
+                await new Promise(function (resolve) {
+                    setTimeout(resolve, 1000);
+                });
+            }
         }
-
-
-        actualizarResumen(
-            respuesta.resumen
-        );
-
-
-        mostrarMovimientos(
-            respuesta.movimientos
-        );
-
-
-    } catch (error) {
-
-        console.error(
-            'Error cargando datos:',
-            error
-        );
-
-        if (
-            error.message &&
-            (
-                error.message
-                    .toLowerCase()
-                    .includes('sesión') ||
-                error.message
-                    .toLowerCase()
-                    .includes('token')
-            )
-        ) {
-
-            localStorage.removeItem(
-                CONFIG.STORAGE_TOKEN
-            );
-
-            mostrarLogin();
-
-        }
-
     }
 
+    // No dejamos la pantalla aparentemente correcta con S/ 0.00
+    // cuando en realidad falló la consulta.
+    mostrarErrorCargaDatos(
+        ultimoError && ultimoError.message
+            ? ultimoError.message
+            : 'No se pudieron cargar los movimientos.'
+    );
+}
+
+function mostrarMensajeCargaDatos(mensaje) {
+    if (!tablaMovimientos) {
+        return;
+    }
+
+    tablaMovimientos.innerHTML = `
+        <tr>
+            <td colspan="7" class="tabla-vacia">
+                ${escaparHTML(mensaje)}
+            </td>
+        </tr>
+    `;
+}
+
+function mostrarErrorCargaDatos(mensaje) {
+    if (!tablaMovimientos) {
+        return;
+    }
+
+    tablaMovimientos.innerHTML = `
+        <tr>
+            <td colspan="7" class="tabla-vacia">
+                No se pudieron cargar los movimientos.
+                <br>
+                <small>${escaparHTML(mensaje)}</small>
+            </td>
+        </tr>
+    `;
+}
+
+function limpiarMensajeCargaDatos() {
+    // No hace falta borrar nada aquí: mostrarMovimientos()
+    // reemplaza completamente el contenido de la tabla.
 }
 
 
