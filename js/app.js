@@ -136,9 +136,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     calcularImporteTotal();
 
+    // Seguridad V1: cada carga completa de la página exige iniciar sesión.
+    // No reutilizamos el token guardado de una visita anterior.
+    localStorage.removeItem(CONFIG.STORAGE_TOKEN);
+
     // Estado inicial seguro: SOLO LOGIN visible.
     mostrarLogin();
-    comprobarSesion();
 
 });
 
